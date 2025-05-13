@@ -1,26 +1,28 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './components/Login';
-import StudentsPage from './components/StudentsPage';
-import ClassesPage from './components/ClassesPage';
-import StudentDetail from './components/StudentDetail';
-import SessionsPage from './components/SessionsPage';
-import MentalHealthPage from './components/MentalHealthPage';
-import PHQ9TestPage from './components/PHQ9TestPage';
-import GAD7TestPage from './components/GAD7TestPage';
-import BehaviorPage from './components/BehaviorPage';
-import CareerPage from './components/CareerPage';
-import CoursePage from './components/CoursePage';
-import SettingsPage from './components/SettingsPage';
-import ProfilePage from './components/ProfilePage';
-import DASS21TestPage from './components/DASS21TestPage';
-// Comment out the problematic import and use a dynamic import instead
-// import StudentReports from './components/StudentReports.tsx';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { PHQ9MachineLearningProvider } from './components/PHQ9MachineLearningProvider';
 import { AssessmentProvider } from './contexts/AssessmentContext';
 
+// Lazy load route components
+const StudentsPage = lazy(() => import('./components/StudentsPage'));
+const ClassesPage = lazy(() => import('./components/ClassesPage'));
+const StudentDetail = lazy(() => import('./components/StudentDetail'));
+const SessionsPage = lazy(() => import('./components/SessionsPage'));
+const MentalHealthPage = lazy(() => import('./components/MentalHealthPage'));
+const PHQ9TestPage = lazy(() => import('./components/PHQ9TestPage'));
+const GAD7TestPage = lazy(() => import('./components/GAD7TestPage'));
+const BehaviorPage = lazy(() => import('./components/BehaviorPage'));
+const CareerPage = lazy(() => import('./components/CareerPage'));
+const CoursePage = lazy(() => import('./components/CoursePage'));
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
+const DASS21TestPage = lazy(() => import('./components/DASS21TestPage'));
+
+// Component to require authentication
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation();
   const token = localStorage.getItem('token');
@@ -69,42 +71,44 @@ function App() {
         <AssessmentProvider>
           <UserProvider>
             <Router>
-              <Routes>
-                {/* Redirect from root to login */}
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/"
-                  element={
-                    <RequireAuth>
-                      <Layout />
-                    </RequireAuth>
-                  }
-                >
-                  <Route index element={<RoleBasedRedirect />} />
-                  <Route path="classes" element={<ClassesPage />} />
-                  <Route path="classes/:id/students" element={<StudentsPage />} />
-                  <Route path="students" element={<StudentsPage />} />
-                  <Route path="students/:id" element={<StudentDetail />} />
-                  <Route path="sessions" element={<SessionsPage />} />
-                  <Route path="sessions/student/:id" element={<SessionsPage />} />
-                  <Route path="mental-health" element={<MentalHealthPage />} />
-                  <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
-                  {/* Integrate PHQ9 test within the layout */}
-                  <Route path="mental-health/phq9-test" element={<PHQ9TestPage />} />
-                  <Route path="mental-health/gad7-test" element={<GAD7TestPage />} />
-                  <Route path="mental-health/dass21-test" element={<DASS21TestPage />} />
-                  <Route path="behavior" element={<BehaviorPage />} />
-                  <Route path="behavior/student/:id" element={<BehaviorPage />} />
-                  <Route path="career" element={<CareerPage />} />
-                  <Route path="career/student/:id" element={<CareerPage />} />
-                  <Route path="career/course/:courseId" element={<CoursePage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="profile" element={<ProfilePage />} />
-                  <Route path="reports" element={<StudentReportsTemp />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="*" element={<RoleBasedRedirect />} />
-                </Route>
-              </Routes>
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Routes>
+                  {/* Redirect from root to login */}
+                  <Route path="/login" element={<Login />} />
+                  <Route
+                    path="/"
+                    element={
+                      <RequireAuth>
+                        <Layout />
+                      </RequireAuth>
+                    }
+                  >
+                    <Route index element={<RoleBasedRedirect />} />
+                    <Route path="classes" element={<ClassesPage />} />
+                    <Route path="classes/:id/students" element={<StudentsPage />} />
+                    <Route path="students" element={<StudentsPage />} />
+                    <Route path="students/:id" element={<StudentDetail />} />
+                    <Route path="sessions" element={<SessionsPage />} />
+                    <Route path="sessions/student/:id" element={<SessionsPage />} />
+                    <Route path="mental-health" element={<MentalHealthPage />} />
+                    <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
+                    {/* Integrate PHQ9 test within the layout */}
+                    <Route path="mental-health/phq9-test" element={<PHQ9TestPage />} />
+                    <Route path="mental-health/gad7-test" element={<GAD7TestPage />} />
+                    <Route path="mental-health/dass21-test" element={<DASS21TestPage />} />
+                    <Route path="behavior" element={<BehaviorPage />} />
+                    <Route path="behavior/student/:id" element={<BehaviorPage />} />
+                    <Route path="career" element={<CareerPage />} />
+                    <Route path="career/student/:id" element={<CareerPage />} />
+                    <Route path="career/course/:courseId" element={<CoursePage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="reports" element={<StudentReportsTemp />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<RoleBasedRedirect />} />
+                  </Route>
+                </Routes>
+              </Suspense>
             </Router>
           </UserProvider>
         </AssessmentProvider>
