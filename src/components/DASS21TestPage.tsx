@@ -341,10 +341,6 @@ Follow-up recommendation: ${overallRisk === 'high' ? '1-2 weeks' : overallRisk =
     navigate('/mental-health');
   };
 
-  // Check if current question is answered
-  const isCurrentQuestionAnswered = () => {
-    return responses[currentQuestionIndex] !== -1;
-  };
 
   // Check if all questions are answered
   const isAssessmentComplete = () => {

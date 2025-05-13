@@ -9,11 +9,5 @@
     "plaintext": "html",
     "typescript": "javascript",
     "typescriptreact": "javascript"
-  },
-  "github-enterprise.uri": "",
-  "github.codespaces.defaultExtensions": [],
-  "git.enabled": false,
-  "github.gitAuthentication": false,
-  "githubPullRequests.enabled": false,
-  "gitlens.enabled": false
+  }
 }
