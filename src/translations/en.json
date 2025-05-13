@@ -1,0 +1,113 @@
+{
+  "errors": {
+    "creatingStudent": "Error creating new student. Please try again.",
+    "loadingStudent": "Error loading student data.",
+    "loadingStudents": "Error loading students data.",
+    "loadingClasses": "Error loading classes data.",
+    "studentNotFound": "Student not found.",
+    "invalidData": "Invalid data received from server.",
+    "timeout": "Request timed out.",
+    "maxRetriesReached": "Maximum retry attempts reached."
+  },
+  "nav": {
+    "students": "Students",
+    "sessions": "Sessions",
+    "mentalHealth": "Mental Health",
+    "behavior": "Behavior",
+    "career": "Career",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "students": {
+    "title": "Students",
+    "subtitle": "Manage all students in the school counseling system.",
+    "search": "Search students...",
+    "add": "Add Student",
+    "tingkat": "Grade",
+    "kelas": "Class",
+    "noStudents": "No students found. Add your first student to get started!",
+    "noResults": "No students match your search criteria.",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "classes": {
+    "title": "Classes",
+    "subtitle": "Manage all classes in the school counseling system.",
+    "search": "Search classes...",
+    "add": "Add Class",
+    "gradeLevel": "Grade Level",
+    "students": "Students",
+    "noClasses": "No classes found. Add your first class to get started!",
+    "noResults": "No classes match your search criteria.",
+    "delete": "Delete",
+    "edit": "Edit",
+    "addNew": "Add New Class",
+    "name": "Class Name"
+  },
+  "status": {
+    "good": "Good",
+    "warning": "Needs Attention",
+    "critical": "Critical"
+  },
+  "studentDetail": {
+    "academicStatus": "Status",
+    "email": "Email",
+    "tingkat": "Grade",
+    "kelas": "Class",
+    "totalSessions": "Total Sessions",
+    "mentalHealth": "Mental Health",
+    "lastCounseling": "Last Counseling",
+    "notAssessed": "Not Assessed",
+    "never": "Never"
+  },
+  "addStudent": {
+    "title": "Add New Student",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "academicStatus": "Academic Status",
+    "photoUrl": "Profile Photo URL (optional)",
+    "photoHelp": "Leave empty to use default avatar.",
+    "cancel": "Cancel",
+    "submit": "Add Student",
+    "selectTingkat": "Select Grade",
+    "selectKelas": "Select Class"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of"
+  },
+  "actions": {
+    "retry": "Retry",
+    "backToStudents": "Back to Students List",
+    "generateReport": "Generate Report",
+    "generating": "Generating...",
+    "download": "Download",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "general": "General",
+    "users": "Users Management",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "system": "System Default"
+  },
+  "profile": {
+    "changePhoto": "Change Photo",
+    "yourName": "Your Name",
+    "name": "Name",
+    "email": "Email",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully"
+  }
+}

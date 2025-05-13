@@ -1,0 +1,36 @@
+For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+
+Use icons from lucide-react for logos.
+
+Use stock photos from unsplash where appropriate, only valid URLs you know exist. Do not download the images, only link to them in image tags.
+
+Based on the project proposal document, I'll help you refine the prompt for writing Python and React code for the Counseling Management System. Here are some key considerations for your project:
+
+The proposal suggests creating a comprehensive student counseling management system with the following key features:
+- Student database management
+- Counseling session scheduling
+- Counseling session record keeping
+- Trend analysis of student issues
+- Automated notifications
+- User authentication
+
+Recommended Tech Stack:
+- Backend: Django or Flask (Python)
+- Frontend: React.js
+- Database: PostgreSQL or SQLite
+- Additional Libraries:
+  - Matplotlib for data visualization
+  - ReportLab for PDF generation
+  - Google Calendar API for scheduling
+  - Authentication system
+
+Would you like me to help you draft an initial architecture or provide a starter code structure for either the backend (Python/Django) or frontend (React) component of this counseling management system? 
+
+I recommend we start by:
+1. Defining the core data models
+2. Setting up the basic project structure
+3. Implementing key features incrementally
+
+Which specific aspect would you like to focus on first - backend models, API endpoints, or frontend components?

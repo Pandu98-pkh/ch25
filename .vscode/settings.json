@@ -1,0 +1,19 @@
+{
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html",
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "github-enterprise.uri": "",
+  "github.codespaces.defaultExtensions": [],
+  "git.enabled": false,
+  "github.gitAuthentication": false,
+  "githubPullRequests.enabled": false,
+  "gitlens.enabled": false
+}
