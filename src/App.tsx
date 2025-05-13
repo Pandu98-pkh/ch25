@@ -10,6 +10,7 @@ import { AssessmentProvider } from './contexts/AssessmentContext';
 // Lazy load route components
 const StudentsPage = lazy(() => import('./components/StudentsPage'));
 const ClassesPage = lazy(() => import('./components/ClassesPage'));
+const ClassDetail = lazy(() => import('./components/ClassDetail'));
 const StudentDetail = lazy(() => import('./components/StudentDetail'));
 const SessionsPage = lazy(() => import('./components/SessionsPage'));
 const MentalHealthPage = lazy(() => import('./components/MentalHealthPage'));
@@ -85,7 +86,7 @@ function App() {
                   >
                     <Route index element={<RoleBasedRedirect />} />
                     <Route path="classes" element={<ClassesPage />} />
-                    <Route path="classes/:id/students" element={<StudentsPage />} />
+                    <Route path="classes/:id/students" element={<ClassDetail />} />
                     <Route path="students" element={<StudentsPage />} />
                     <Route path="students/:id" element={<StudentDetail />} />
                     <Route path="sessions" element={<SessionsPage />} />

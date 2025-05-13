@@ -5,7 +5,7 @@ import ClassCard from '../components/ClassCard';
 import AddClassForm from '../components/AddClassForm';
 import { Search, Plus, RefreshCcw, AlertCircle, Filter, BookOpen, GraduationCap, School } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getClasses, createClass } from '../services/classes';
+import { getClasses, createClass } from '../services/classService';
 import axios, { AxiosError } from 'axios';
 import { createAbortController } from '../services/api';
 import { cn } from '../utils/cn';
@@ -101,10 +101,14 @@ export default function ClassesPage() {
   };
 
   // Filter classes based on search term and grade level
-  const filteredClasses = classes.filter((classItem) => 
-    classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    (filterGradeLevel === 'all' || classItem.gradeLevel.startsWith(filterGradeLevel))
-  );
+  const filteredClasses = classes.filter((classItem) => {
+    const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Improve grade level filtering for exact matching
+    const matchesGrade = filterGradeLevel === 'all' || classItem.gradeLevel.split(' ')[0] === filterGradeLevel;
+    
+    return matchesSearch && matchesGrade;
+  });
 
   // Get grade level icon
   const getGradeIcon = (grade: 'X' | 'XI' | 'XII') => {

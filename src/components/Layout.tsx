@@ -39,6 +39,8 @@ const counselorNavigation = [
 const studentNavigation = [
   { name: 'nav.sessions', href: '/sessions', icon: Calendar },
   { name: 'nav.mentalHealth', href: '/mental-health', icon: Brain },
+  { name: 'nav.career', href: '/career', icon: User },
+  { name: 'nav.behavior', href: '/behavior', icon: BarChart3 },
   { name: 'nav.reports', href: '/reports', icon: FileText },
   { name: 'nav.settings', href: '/settings', icon: Settings },
 ];
