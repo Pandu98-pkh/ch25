@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Bell, Globe, PaintBucket, Palette, CheckCircle, Settings } from 'lucide-react';
+import { Moon, Sun, Bell, Globe, PaintBucket, CheckCircle, Settings } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
-import { cn } from '../utils/cn';
 import { useNavigate } from 'react-router-dom';
 
 export default function SettingsPage() {

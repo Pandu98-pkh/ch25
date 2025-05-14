@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Clock, CheckCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Quiz } from '../services/CourseCareer';
 import { cn } from '../utils/cn';
@@ -15,14 +15,13 @@ export default function QuizCourse({ quiz, onExit, onSubmit }: QuizCourseProps) 
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
+  
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   // Initialize quiz timer
   useEffect(() => {
     if (quiz.timeLimit) {
       setTimeRemaining(quiz.timeLimit * 60);
-      setQuizStartTime(new Date());
     } else {
       setTimeRemaining(null);
     }

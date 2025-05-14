@@ -8,7 +8,6 @@ import {
   ChevronLeft, 
   Users, 
   User, 
-  Calendar, 
   GraduationCap, 
   BookOpen, 
   Clock, 

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './components/Login';
@@ -24,6 +24,7 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
 const DASS21TestPage = lazy(() => import('./components/DASS21TestPage'));
 const UserManagementPage = lazy(() => import('./components/UserManagementPage'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 // Component to require authentication
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -50,18 +51,8 @@ function RequireAdminAuth({ children }: { children: JSX.Element }) {
 
 // Component to redirect based on user role
 function RoleBasedRedirect() {
-  const { isAdmin, isCounselor, isStudent } = useUser();
-  
-  if (isAdmin) {
-    return <Navigate to="/students" replace />;
-  } else if (isCounselor) {
-    return <Navigate to="/sessions" replace />;
-  } else if (isStudent) {
-    return <Navigate to="/profile" replace />;
-  } else {
-    // If role not determined yet, show loading or redirect to login
-    return <Navigate to="/login" replace />;
-  }
+  // Always redirect to dashboard (root path)
+  return <Navigate to="/" replace />;
 }
 
 // Temporary StudentReports component until import issue is resolved
@@ -98,7 +89,7 @@ function App() {
                         </RequireAuth>
                       }
                     >
-                      <Route index element={<RoleBasedRedirect />} />
+                      <Route index element={<Dashboard />} /> {/* Default route goes to Dashboard */}
                       <Route path="classes" element={<ClassesPage />} />
                       <Route path="classes/:id/students" element={<ClassDetail />} />
                       <Route path="students" element={<StudentsPage />} />

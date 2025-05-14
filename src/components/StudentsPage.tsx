@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Student, FilterParams } from '../types';
 import StudentCard from './StudentCard';
 import AddStudentForm from './AddStudentForm';
-import { Search, Plus, RefreshCcw, AlertCircle, Filter, UserPlus, CheckCircle2, Clock, Users } from 'lucide-react';
+import { Search, RefreshCcw, AlertCircle, Filter, UserPlus, CheckCircle2, Clock, Users } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getStudents, createStudent } from '../services/studentService';
 import axios, { AxiosError } from 'axios';

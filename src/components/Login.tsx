@@ -38,13 +38,8 @@ export default function Login() {
 
       setUser(user);
 
-      const defaultRoutes = {
-        admin: '/students',
-        counselor: '/sessions',
-        student: '/profile'
-      };
-
-      const from = (location.state as any)?.from?.pathname || defaultRoutes[user.role];
+      // Always navigate to dashboard (root path) after login
+      const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);

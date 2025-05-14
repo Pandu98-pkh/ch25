@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "userManagement": "User Management",
+    "classes": "Classes",
+    "students": "Students",
+    "sessions": "Sessions",
+    "mentalHealth": "Mental Health",
+    "behavior": "Behavior",
+    "career": "Career",
+    "reports": "Reports",
+    "settings": "Settings",
+    "logout": "Logout"
+  }
+}

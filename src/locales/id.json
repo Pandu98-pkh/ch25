@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "userManagement": "Manajemen Pengguna",
+    "classes": "Kelas",
+    "students": "Siswa",
+    "sessions": "Sesi",
+    "mentalHealth": "Kesehatan Mental",
+    "behavior": "Perilaku",
+    "career": "Karir",
+    "reports": "Laporan",
+    "settings": "Pengaturan",
+    "logout": "Keluar"
+  }
+}

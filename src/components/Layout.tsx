@@ -24,6 +24,7 @@ import LanguageSwitch from './LanguageSwitch';
 import NotificationPanel from './NotificationPanel';
 
 const adminNavigation = [
+  { name: 'nav.dashboard', href: '/', icon: BarChart3 },
   { name: 'nav.userManagement', href: '/user-management', icon: Shield },
   { name: 'nav.classes', href: '/classes', icon: Users },
   { name: 'nav.students', href: '/students', icon: GraduationCap },
@@ -34,6 +35,7 @@ const adminNavigation = [
 ];
 
 const counselorNavigation = [
+  { name: 'nav.dashboard', href: '/', icon: BarChart3 },
   { name: 'nav.students', href: '/students', icon: GraduationCap },
   { name: 'nav.sessions', href: '/sessions', icon: Calendar },
   { name: 'nav.mentalHealth', href: '/mental-health', icon: Brain },
@@ -41,6 +43,7 @@ const counselorNavigation = [
 ];
 
 const studentNavigation = [
+  { name: 'nav.dashboard', href: '/', icon: BarChart3 },
   { name: 'nav.sessions', href: '/sessions', icon: Calendar },
   { name: 'nav.mentalHealth', href: '/mental-health', icon: Brain },
   { name: 'nav.career', href: '/career', icon: User },

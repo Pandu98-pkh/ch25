@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, HelpCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useState} from 'react';
+import { ChevronLeft, ChevronRight, HelpCircle, CheckCircle} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { cn } from '../utils/cn';
 
