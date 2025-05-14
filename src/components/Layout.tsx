@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { cn } from '../utils/cn';
 import { format } from 'date-fns';
@@ -15,12 +15,16 @@ import {
   FileText,
   LogOut,
   Bell,
+  Shield,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import LanguageSwitch from './LanguageSwitch';
+import NotificationPanel from './NotificationPanel';
 
 const adminNavigation = [
+  { name: 'nav.userManagement', href: '/user-management', icon: Shield },
   { name: 'nav.classes', href: '/classes', icon: Users },
   { name: 'nav.students', href: '/students', icon: GraduationCap },
   { name: 'nav.sessions', href: '/sessions', icon: Calendar },
@@ -51,6 +55,9 @@ export default function Layout() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { t, language } = useLanguage();
   const { user, isAdmin, isCounselor, setUser } = useUser();
+  const { unreadCount } = useNotifications();
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const navigation = isAdmin
     ? adminNavigation
@@ -63,6 +70,19 @@ export default function Layout() {
       setCurrentTime(new Date());
     }, 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setNotificationPanelOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -307,10 +327,25 @@ export default function Layout() {
                 {formatTimeWithLocale(currentTime, 'PPP')}
               </div>
 
-              <button className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors duration-200 relative">
-                <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse"></span>
-                <Bell className="h-6 w-6" />
-              </button>
+              <div className="relative" ref={notificationRef}>
+                <button 
+                  className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors duration-200 relative"
+                  onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+                  aria-label="Notifications"
+                >
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 h-5 w-5 flex items-center justify-center bg-red-500 text-white text-xs font-medium rounded-full">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                  <Bell className="h-6 w-6" />
+                </button>
+                
+                <NotificationPanel 
+                  isOpen={notificationPanelOpen} 
+                  onClose={() => setNotificationPanelOpen(false)} 
+                />
+              </div>
 
               <Link
                 to="/profile"

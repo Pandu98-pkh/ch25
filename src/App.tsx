@@ -6,6 +6,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { PHQ9MachineLearningProvider } from './components/PHQ9MachineLearningProvider';
 import { AssessmentProvider } from './contexts/AssessmentContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Lazy load route components
 const StudentsPage = lazy(() => import('./components/StudentsPage'));
@@ -22,6 +23,7 @@ const CoursePage = lazy(() => import('./components/CoursePage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
 const DASS21TestPage = lazy(() => import('./components/DASS21TestPage'));
+const UserManagementPage = lazy(() => import('./components/UserManagementPage'));
 
 // Component to require authentication
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -30,6 +32,17 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 
   if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+// Component to require admin authentication
+function RequireAdminAuth({ children }: { children: JSX.Element }) {
+  const { isAdmin } = useUser();
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -71,46 +84,56 @@ function App() {
       <PHQ9MachineLearningProvider>
         <AssessmentProvider>
           <UserProvider>
-            <Router>
-              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-                <Routes>
-                  {/* Redirect from root to login */}
-                  <Route path="/login" element={<Login />} />
-                  <Route
-                    path="/"
-                    element={
-                      <RequireAuth>
-                        <Layout />
-                      </RequireAuth>
-                    }
-                  >
-                    <Route index element={<RoleBasedRedirect />} />
-                    <Route path="classes" element={<ClassesPage />} />
-                    <Route path="classes/:id/students" element={<ClassDetail />} />
-                    <Route path="students" element={<StudentsPage />} />
-                    <Route path="students/:id" element={<StudentDetail />} />
-                    <Route path="sessions" element={<SessionsPage />} />
-                    <Route path="sessions/student/:id" element={<SessionsPage />} />
-                    <Route path="mental-health" element={<MentalHealthPage />} />
-                    <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
-                    {/* Integrate PHQ9 test within the layout */}
-                    <Route path="mental-health/phq9-test" element={<PHQ9TestPage />} />
-                    <Route path="mental-health/gad7-test" element={<GAD7TestPage />} />
-                    <Route path="mental-health/dass21-test" element={<DASS21TestPage />} />
-                    <Route path="behavior" element={<BehaviorPage />} />
-                    <Route path="behavior/student/:id" element={<BehaviorPage />} />
-                    <Route path="career" element={<CareerPage />} />
-                    <Route path="career/student/:id" element={<CareerPage />} />
-                    <Route path="career/course/:courseId" element={<CoursePage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="reports" element={<StudentReportsTemp />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="*" element={<RoleBasedRedirect />} />
-                  </Route>
-                </Routes>
-              </Suspense>
-            </Router>
+            <NotificationProvider>
+              <Router>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                  <Routes>
+                    {/* Redirect from root to login */}
+                    <Route path="/login" element={<Login />} />
+                    <Route
+                      path="/"
+                      element={
+                        <RequireAuth>
+                          <Layout />
+                        </RequireAuth>
+                      }
+                    >
+                      <Route index element={<RoleBasedRedirect />} />
+                      <Route path="classes" element={<ClassesPage />} />
+                      <Route path="classes/:id/students" element={<ClassDetail />} />
+                      <Route path="students" element={<StudentsPage />} />
+                      <Route path="students/:id" element={<StudentDetail />} />
+                      <Route path="sessions" element={<SessionsPage />} />
+                      <Route path="sessions/student/:id" element={<SessionsPage />} />
+                      <Route path="mental-health" element={<MentalHealthPage />} />
+                      <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
+                      {/* Integrate PHQ9 test within the layout */}
+                      <Route path="mental-health/phq9-test" element={<PHQ9TestPage />} />
+                      <Route path="mental-health/gad7-test" element={<GAD7TestPage />} />
+                      <Route path="mental-health/dass21-test" element={<DASS21TestPage />} />
+                      <Route path="behavior" element={<BehaviorPage />} />
+                      <Route path="behavior/student/:id" element={<BehaviorPage />} />
+                      <Route path="career" element={<CareerPage />} />
+                      <Route path="career/student/:id" element={<CareerPage />} />
+                      <Route path="career/course/:courseId" element={<CoursePage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route 
+                        path="user-management" 
+                        element={
+                          <RequireAdminAuth>
+                            <UserManagementPage />
+                          </RequireAdminAuth>
+                        } 
+                      />
+                      <Route path="profile" element={<ProfilePage />} />
+                      <Route path="reports" element={<StudentReportsTemp />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="*" element={<RoleBasedRedirect />} />
+                    </Route>
+                  </Routes>
+                </Suspense>
+              </Router>
+            </NotificationProvider>
           </UserProvider>
         </AssessmentProvider>
       </PHQ9MachineLearningProvider>
