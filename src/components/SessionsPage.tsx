@@ -690,21 +690,19 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                     </select>
                   </div>
 
-                  {isCounselor && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
-                      <select
-                        value={selectedApprovalStatus}
-                        onChange={(e) => setSelectedApprovalStatus(e.target.value as 'pending' | 'approved' | 'rejected' | '')}
-                        className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
-                      >
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
+                    <select
+                      value={selectedApprovalStatus}
+                      onChange={(e) => setSelectedApprovalStatus(e.target.value as 'pending' | 'approved' | 'rejected' | '')}
+                      className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
+                    >
+                      <option value="">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
@@ -848,11 +846,9 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Outcome
                   </th>
-                  {isCounselor && (
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                  )}
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
                   <th scope="col" className="relative px-6 py-4">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -957,9 +953,10 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                         {session.outcome === 'positive' ? 'Positive' : session.outcome === 'neutral' ? 'Neutral' : 'Negative'}
                       </span>
                     </td>
-                    {isCounselor && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {(!session.approvalStatus || (session as any).approvalStatus === 'pending') ? (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {isCounselor ? (
+                        // Counselor view with action buttons
+                        (!session.approvalStatus || (session as any).approvalStatus === 'pending') ? (
                           <div className="flex items-center space-x-2">
                             <span className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center bg-yellow-100 text-yellow-800 border border-yellow-200">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1 text-yellow-500" />
@@ -993,9 +990,40 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                             {(session as any).approvalStatus === 'rejected' && <XCircle className="h-3.5 w-3.5 mr-1 text-red-500" />}
                             {(session as any).approvalStatus === 'approved' ? 'Approved' : 'Rejected'}
                           </span>
-                        )}
-                      </td>
-                    )}
+                        )
+                      ) : (
+                        // Student and Admin view - read-only status display
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center w-fit ${
+                          !session.approvalStatus || (session as any).approvalStatus === 'pending' 
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : (session as any).approvalStatus === 'approved' 
+                              ? 'bg-green-100 text-green-800 border border-green-200' 
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          {!session.approvalStatus || (session as any).approvalStatus === 'pending' ? (
+                            <>
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1 text-yellow-500" />
+                              Pending Approval
+                            </>
+                          ) : (session as any).approvalStatus === 'approved' ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 mr-1 text-green-500" />
+                              Approved
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-3.5 w-3.5 mr-1 text-red-500" />
+                              Rejected
+                              {(session as any).rejectionReason && (
+                                <span className="ml-1 text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded">
+                                  ({(session as any).rejectionReason})
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-1 justify-end">
                         <button
@@ -1029,7 +1057,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
 
                 {filteredAndSortedSessions.length === 0 && (
                   <tr>
-                    <td colSpan={isCounselor ? 8 : 7} className="px-6 py-10 text-center">
+                    <td colSpan={8} className="px-6 py-10 text-center">
                       <div className="text-gray-500 flex flex-col items-center">
                         <div className="bg-gray-50 p-6 rounded-full mb-4 w-24 h-24 flex items-center justify-center border border-gray-100 shadow-inner">
                           <CalendarIcon className="h-12 w-12 text-gray-300" />
