@@ -4,157 +4,213 @@
 import api from './api';
 import { User } from '../types';
 
-// Mock storage for users in local development
-const USERS_STORAGE_KEY = 'counselorApp_users';
+const API_URL = 'http://localhost:5000/api';
 
-// Function to get all users
+// Get all users
 export const getUsers = async (): Promise<User[]> => {
   try {
-    // In a real application, this would call the API
-    // return (await api.get('/users')).data;
-    
-    // For this demo, we'll use localStorage
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (storedUsers) {
-      return JSON.parse(storedUsers);
+    const response = await fetch(`${API_URL}/users`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch users');
     }
-    
-    // Default users if none exist
-    const defaultUsers: User[] = [
-      { 
-        id: '1', 
-        name: 'Administrator', 
-        email: 'admin@example.com', 
-        role: 'admin',
-        username: 'admin',
-        password: 'admin123456'
-      },
-      { 
-        id: '2', 
-        name: 'John Smith', 
-        email: 'john@example.com', 
-        role: 'counselor',
-        username: 'john',
-        password: 'password123'
-      },
-      { 
-        id: '3', 
-        name: 'Jane Doe', 
-        email: 'jane@example.com', 
-        role: 'counselor',
-        username: 'jane',
-        password: 'password123'
-      },
-      { 
-        id: '4', 
-        name: 'Student User', 
-        email: 'student@example.com', 
-        role: 'student',
-        username: 'student',
-        password: 'password123'
-      }
-    ];
-    
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
-    return defaultUsers;
+    return await response.json();
   } catch (error) {
     console.error('Error fetching users:', error);
     throw error;
   }
 };
 
-// Function to create a new user
+// Get a user by ID
+export const getUserById = async (userId: string): Promise<User> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch user');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching user with ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Create a new user
 export const createUser = async (userData: Omit<User, 'id'>): Promise<User> => {
   try {
-    // In a real application, this would call the API
-    // return (await api.post('/users', userData)).data;
+    const response = await fetch(`${API_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
     
-    // For this demo, we'll use localStorage
-    const users = await getUsers();
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create user');
+    }
     
-    const newUser: User = {
-      ...userData,
-      id: (users.length + 1).toString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    
-    return newUser;
+    return await response.json();
   } catch (error) {
     console.error('Error creating user:', error);
     throw error;
   }
 };
 
-// Function to update an existing user
-export const updateUser = async (id: string, userData: Partial<User>): Promise<User> => {
+// Update an existing user
+export const updateUser = async (userId: string, userData: User): Promise<User> => {
   try {
-    // In a real application, this would call the API
-    // return (await api.put(`/users/${id}`, userData)).data;
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
     
-    // For this demo, we'll use localStorage
-    const users = await getUsers();
-    const index = users.findIndex(user => user.id === id);
-    
-    if (index === -1) {
-      throw new Error('User not found');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update user');
     }
     
-    // If password is empty, keep the old password
-    if (userData.password === '') {
-      delete userData.password;
-    }
-    
-    const updatedUser = {
-      ...users[index],
-      ...userData
-    };
-    
-    users[index] = updatedUser;
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    
-    return updatedUser;
+    return await response.json();
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error(`Error updating user with ID ${userId}:`, error);
     throw error;
   }
 };
 
-// Function to delete a user
-export const deleteUser = async (id: string): Promise<void> => {
+// Delete a user
+export const deleteUser = async (userId: string): Promise<void> => {
   try {
-    // In a real application, this would call the API
-    // await api.delete(`/users/${id}`);
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      method: 'DELETE',
+    });
     
-    // For this demo, we'll use localStorage
-    const users = await getUsers();
-    const filteredUsers = users.filter(user => user.id !== id);
-    
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(filteredUsers));
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete user');
+    }
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error(`Error deleting user with ID ${userId}:`, error);
     throw error;
   }
 };
 
-// Function to authenticate a user
-export const authenticateUser = async (username: string, password: string): Promise<User | null> => {
+// Authentication function that Login.tsx is expecting
+export const authenticateUser = async (username: string, password: string): Promise<{ user: User }> => {
   try {
-    // In a real application, this would call the API
-    // return (await api.post('/auth/login', { username, password })).data;
+    const response = await fetch(`${API_URL}/users/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
     
-    // For this demo, we'll use localStorage
-    const users = await getUsers();
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Login failed');
+    }
     
-    const user = users.find(
-      user => user.username === username && user.password === password
-    );
-    
-    return user || null;
+    return await response.json();
   } catch (error) {
-    console.error('Error authenticating user:', error);
+    console.error('Authentication error:', error);
     throw error;
+  }
+};
+
+// Get users who are not yet students
+export const getNonStudentUsers = async (): Promise<User[]> => {
+  try {
+    // Get all users with student role
+    const allUsers = await getUsers();
+    const studentUsers = allUsers.filter(user => user.role === 'student');
+    
+    // For this we need to check which students are already in the student table
+    // We'll need to call an endpoint that gives us users who are not yet in student table
+    try {
+      // Try to get users who are not yet students from a dedicated endpoint
+      const response = await fetch(`${API_URL}/users/available-for-student`);
+      if (response.ok) {
+        const availableUsers = await response.json();
+        return availableUsers;
+      }
+    } catch (endpointError) {
+      console.log('Dedicated endpoint not available, using client-side filtering');
+    }
+    
+    // Fallback: Get all students and filter out users who are already students
+    try {
+      // Import studentService to check existing students
+      const { getStudents } = await import('./studentService');
+      const studentsResponse = await getStudents({}, 1, 1000); // Get many students
+      const existingStudents = studentsResponse.data || [];
+        // Get user IDs that are already students
+      const existingStudentUserIds = new Set(
+        existingStudents
+          .map(student => student.id || student.studentId)
+          .filter(Boolean)
+      );
+        // Filter out users who are already students
+      const availableUsers = studentUsers.filter(user => 
+        !existingStudentUserIds.has(user.id || user.userId)
+      );
+      
+      return availableUsers;
+    } catch (studentServiceError) {
+      console.error('Error checking existing students:', studentServiceError);
+      // Final fallback: return all student users
+      return studentUsers;
+    }
+    
+  } catch (error) {
+    console.error('Error fetching non-student users:', error);
+    
+    // Fallback: return empty array if API fails
+    return [];
+  }
+};
+
+interface UserStatistics {
+  totalUsers: number;
+  totalCounselors: number;
+  totalStudents: number;
+  totalAdmins: number;
+}
+
+// Get user statistics
+export const getUserStatistics = async (): Promise<UserStatistics> => {
+  try {
+    const response = await fetch(`${API_URL}/users/statistics`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch user statistics');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user statistics:', error);
+    
+    // Fallback: calculate from all users if statistics endpoint is not available
+    try {
+      const allUsers = await getUsers();
+      const totalUsers = allUsers.length;
+      const totalCounselors = allUsers.filter(user => user.role === 'counselor').length;
+      const totalStudents = allUsers.filter(user => user.role === 'student').length;
+      const totalAdmins = allUsers.filter(user => user.role === 'admin').length;
+      
+      return {
+        totalUsers,
+        totalCounselors,
+        totalStudents,
+        totalAdmins
+      };
+    } catch (fallbackError) {
+      console.error('Error in fallback user statistics calculation:', fallbackError);
+      throw error;
+    }
   }
 };
 
@@ -164,5 +220,7 @@ export default {
   createUser,
   updateUser,
   deleteUser,
-  authenticateUser
+  authenticateUser,
+  getNonStudentUsers,
+  getUserStatistics
 };

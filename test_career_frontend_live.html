@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Career Frontend Database Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .success { background: #dcfce7; color: #166534; border-left: 4px solid #16a34a; }
+        .error { background: #fee2e2; color: #991b1b; border-left: 4px solid #dc2626; }
+        .info { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
+        .warning { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 500;
+        }
+        button:hover { background: #2563eb; }
+        .json-output {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        h1 { color: #1e293b; text-align: center; }
+        h2 { color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-pending { background: #94a3b8; }
+        .status-success { background: #22c55e; }
+        .status-error { background: #ef4444; }
+        .status-warning { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Live Career Frontend Database Connectivity Test</h1>
+    <p style="text-align: center; color: #64748b;">Testing if the React Career page is properly connected to the backend database</p>
+
+    <!-- API Connection Tests -->
+    <div class="container">
+        <h2>🔌 Direct API Tests</h2>
+        <div class="test-result info" id="backend-status">
+            <span class="status-indicator status-pending"></span>
+            Backend connection - Testing...
+        </div>
+        <div class="test-result info" id="resources-status">
+            <span class="status-indicator status-pending"></span>
+            Career resources API - Testing...
+        </div>
+        <div class="test-result info" id="assessments-status">
+            <span class="status-indicator status-pending"></span>
+            Career assessments API - Testing...
+        </div>
+        <button onclick="testDirectAPI()">Test Direct API Connection</button>
+        <div class="json-output" id="api-data" style="display: none;"></div>
+    </div>
+
+    <!-- Frontend Service Test -->
+    <div class="container">
+        <h2>⚛️ Frontend Service Test</h2>
+        <div class="test-result info" id="service-test">
+            <span class="status-indicator status-pending"></span>
+            Career service integration - Testing...
+        </div>
+        <button onclick="testFrontendService()">Test Frontend Service</button>
+        <div class="json-output" id="service-data" style="display: none;"></div>
+    </div>
+
+    <!-- Browser Console Test -->
+    <div class="container">
+        <h2>🌐 Browser Console Check</h2>
+        <div class="test-result info" id="console-check">
+            <span class="status-indicator status-pending"></span>
+            Console errors check - Click to test
+        </div>
+        <button onclick="checkConsoleErrors()">Check Console Errors</button>
+        <div class="json-output" id="console-data" style="display: none;"></div>
+    </div>
+
+    <!-- Network Activity Test -->
+    <div class="container">
+        <h2>📡 Network Activity Monitor</h2>
+        <div class="test-result info" id="network-monitor">
+            <span class="status-indicator status-pending"></span>
+            Network requests monitoring - Click to start
+        </div>
+        <button onclick="startNetworkMonitoring()">Monitor Network Requests</button>
+        <div class="json-output" id="network-data" style="display: none;"></div>
+    </div>
+
+    <!-- Mock Data Status -->
+    <div class="container">
+        <h2>🎭 Mock Data Status</h2>
+        <div class="test-result info" id="mock-status">
+            <span class="status-indicator status-pending"></span>
+            Mock data configuration - Click to check
+        </div>
+        <button onclick="checkMockDataStatus()">Check Mock Data Status</button>
+        <div class="json-output" id="mock-data" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function updateStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${type}`;
+            
+            const indicator = element.querySelector('.status-indicator');
+            if (indicator) {
+                indicator.className = `status-indicator status-${type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'pending'}`;
+            }
+            
+            const textNode = element.childNodes[element.childNodes.length - 1];
+            if (textNode && textNode.nodeType === 3) {
+                textNode.textContent = message;
+            } else {
+                element.innerHTML = element.innerHTML.replace(/([^>]+)$/, message);
+            }
+        }
+
+        function showData(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testDirectAPI() {
+            updateStatus('backend-status', 'info', 'Testing backend connection...');
+            updateStatus('resources-status', 'info', 'Testing resources API...');
+            updateStatus('assessments-status', 'info', 'Testing assessments API...');
+
+            try {
+                // Test backend health
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                if (healthResponse.ok) {
+                    updateStatus('backend-status', 'success', '✅ Backend is running and responsive');
+                } else {
+                    updateStatus('backend-status', 'error', `❌ Backend health check failed: ${healthResponse.status}`);
+                }
+
+                // Test career resources
+                const resourcesResponse = await fetch(`${API_BASE}/career-resources`);
+                if (resourcesResponse.ok) {
+                    const resourcesData = await resourcesResponse.json();
+                    updateStatus('resources-status', 'success', 
+                        `✅ Resources API working - Found ${resourcesData.totalCount || resourcesData.count || 0} resources`);
+                } else {
+                    updateStatus('resources-status', 'error', 
+                        `❌ Resources API failed: ${resourcesResponse.status}`);
+                }
+
+                // Test career assessments
+                const assessmentsResponse = await fetch(`${API_BASE}/career-assessments`);
+                if (assessmentsResponse.ok) {
+                    const assessmentsData = await assessmentsResponse.json();
+                    updateStatus('assessments-status', 'success', 
+                        `✅ Assessments API working - Found ${assessmentsData.totalCount || assessmentsData.count || 0} assessments`);
+                    
+                    showData('api-data', {
+                        backend: 'Connected',
+                        resources: resourcesData,
+                        assessments: assessmentsData
+                    });
+                } else {
+                    updateStatus('assessments-status', 'error', 
+                        `❌ Assessments API failed: ${assessmentsResponse.status}`);
+                }
+
+            } catch (error) {
+                updateStatus('backend-status', 'error', `❌ API test failed: ${error.message}`);
+                updateStatus('resources-status', 'error', 'API connection failed');
+                updateStatus('assessments-status', 'error', 'API connection failed');
+            }
+        }
+
+        async function testFrontendService() {
+            updateStatus('service-test', 'info', 'Testing frontend service integration...');
+
+            try {
+                // Check if we can access the React app's context
+                const testCreateAssessment = {
+                    studentId: "1103220016",
+                    type: "riasec",
+                    interests: ["Investigative", "Realistic"],
+                    skills: ["problem_solving", "technical"],
+                    values: ["achievement", "independence"],
+                    recommendedPaths: ["Engineering", "Computer Science"],
+                    notes: "Frontend connectivity test",
+                    results: {
+                        realistic: 85,
+                        investigative: 90,
+                        artistic: 45,
+                        social: 60,
+                        enterprising: 55,
+                        conventional: 70
+                    }
+                };
+
+                const createResponse = await fetch(`${API_BASE}/career-assessments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testCreateAssessment)
+                });
+
+                if (createResponse.ok) {
+                    const created = await createResponse.json();
+                    updateStatus('service-test', 'success', 
+                        `✅ Frontend service integration working - Created test assessment: ${created.id}`);
+                    
+                    // Clean up - delete the test assessment
+                    await fetch(`${API_BASE}/career-assessments/${created.id}`, {
+                        method: 'DELETE'
+                    });
+
+                    showData('service-data', {
+                        status: 'Frontend service integration working',
+                        testAssessment: created
+                    });
+                } else {
+                    updateStatus('service-test', 'error', 
+                        `❌ Frontend service test failed: ${createResponse.status}`);
+                }
+
+            } catch (error) {
+                updateStatus('service-test', 'error', `❌ Frontend service test error: ${error.message}`);
+            }
+        }
+
+        function checkConsoleErrors() {
+            updateStatus('console-check', 'info', 'Checking console for errors...');
+
+            // Check if there are any console errors
+            const originalError = console.error;
+            const errors = [];
+            
+            console.error = function(...args) {
+                errors.push(args.join(' '));
+                originalError.apply(console, arguments);
+            };
+
+            // Simulate checking for React app errors
+            setTimeout(() => {
+                if (errors.length === 0) {
+                    updateStatus('console-check', 'success', '✅ No console errors detected');
+                } else {
+                    updateStatus('console-check', 'warning', `⚠️ Found ${errors.length} console errors`);
+                    showData('console-data', { errors });
+                }
+                
+                // Restore original console.error
+                console.error = originalError;
+            }, 1000);
+        }
+
+        function startNetworkMonitoring() {
+            updateStatus('network-monitor', 'info', 'Monitoring network requests...');
+
+            // Monitor network requests to the API
+            const requests = [];
+            const originalFetch = window.fetch;
+            
+            window.fetch = function(url, options) {
+                if (url.includes('/api/')) {
+                    requests.push({
+                        url,
+                        method: options?.method || 'GET',
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                return originalFetch.apply(this, arguments);
+            };
+
+            setTimeout(() => {
+                window.fetch = originalFetch;
+                
+                if (requests.length > 0) {
+                    updateStatus('network-monitor', 'success', 
+                        `✅ Detected ${requests.length} API requests`);
+                    showData('network-data', { requests });
+                } else {
+                    updateStatus('network-monitor', 'warning', 
+                        '⚠️ No API requests detected - Check if Career page is loaded');
+                }
+            }, 5000);
+        }
+
+        async function checkMockDataStatus() {
+            updateStatus('mock-status', 'info', 'Checking mock data configuration...');
+
+            try {
+                // Check if we're getting real database data
+                const resourcesResponse = await fetch(`${API_BASE}/career-resources`);
+                const assessmentsResponse = await fetch(`${API_BASE}/career-assessments`);
+
+                if (resourcesResponse.ok && assessmentsResponse.ok) {
+                    const resourcesData = await resourcesResponse.json();
+                    const assessmentsData = await assessmentsResponse.json();
+
+                    // Check if data looks like real database data (has IDs, timestamps, etc.)
+                    const hasRealData = (
+                        resourcesData.totalCount > 0 || 
+                        assessmentsData.totalCount > 0
+                    );
+
+                    if (hasRealData) {
+                        updateStatus('mock-status', 'success', 
+                            '✅ Using real database data - Mock data is disabled');
+                    } else {
+                        updateStatus('mock-status', 'warning', 
+                            '⚠️ No data found - May be using mock data or empty database');
+                    }
+
+                    showData('mock-data', {
+                        resourcesCount: resourcesData.totalCount || 0,
+                        assessmentsCount: assessmentsData.totalCount || 0,
+                        usingRealData: hasRealData
+                    });
+                } else {
+                    updateStatus('mock-status', 'error', '❌ Could not check data source');
+                }
+            } catch (error) {
+                updateStatus('mock-status', 'error', `❌ Error checking mock data status: ${error.message}`);
+            }
+        }
+
+        // Auto-run basic tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(testDirectAPI, 1000);
+        });
+    </script>
+</body>
+</html>

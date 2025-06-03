@@ -1,6 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { format } from 'date-fns';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { MentalHealthAssessment } from '../types';
+import { useMentalHealthAssessments } from '../hooks/useMentalHealthAssessments';
+import { useUser } from './UserContext';
+import { createMentalHealthAssessment } from '../services/mentalHealthService';
+import { getStudentByUserId } from '../services/studentService';
 
+// Legacy Assessment interface for compatibility - maps to MentalHealthAssessment
 export interface Assessment {
   id: string;
   type: string;
@@ -20,6 +25,7 @@ export interface Assessment {
     nextPredictedScore: number;
   };
   recommendations?: string[];
+  assessor?: string | { id: string; name: string; };
   // Add DASS-21 specific properties
   subScores?: {
     depression: number;
@@ -56,154 +62,139 @@ export const useAssessments = () => {
   return context;
 };
 
-// Initial mock data
-const initialMockData: Assessment[] = [
-  {
-    id: '1',
-    type: 'PHQ-9',
-    score: 12,
-    date: '2023-11-10',
-    risk: 'moderate',
-    notes: 'Patient exhibits symptoms of moderate depression',
-    responses: [
-      { questionId: 1, answer: 2 },
-      { questionId: 2, answer: 2 },
-      { questionId: 3, answer: 1 },
-      { questionId: 4, answer: 2 },
-      { questionId: 5, answer: 1 },
-      { questionId: 6, answer: 1 },
-      { questionId: 7, answer: 1 },
-      { questionId: 8, answer: 1 },
-      { questionId: 9, answer: 1 }
-    ],
-    mlPrediction: {
-      trend: 'improving',
-      confidence: 0.72,
-      nextPredictedScore: 10
-    },
-    recommendations: [
-      "Continue current therapy sessions",
-      "Maintain daily mood tracking",
-      "Consider light exercise 3 times per week"
-    ]
-  },
-  {
-    id: '2',
-    type: 'GAD-7',
-    score: 18,
-    date: '2023-11-05',
-    risk: 'high',
-    notes: 'Severe anxiety symptoms, recommend follow-up',
-    responses: [
-      { questionId: 1, answer: 3 },
-      { questionId: 2, answer: 2 },
-      { questionId: 3, answer: 3 },
-      { questionId: 4, answer: 2 },
-      { questionId: 5, answer: 3 },
-      { questionId: 6, answer: 2 },
-      { questionId: 7, answer: 3 }
-    ],
-    mlPrediction: {
-      trend: 'worsening',
-      confidence: 0.81,
-      nextPredictedScore: 20
-    },
-    recommendations: [
-      "Schedule psychiatric consultation",
-      "Consider anxiety management program",
-      "Daily anxiety tracking recommended"
-    ]
-  },
-  {
-    id: '3',
-    type: 'PHQ-9',
-    score: 5,
-    date: '2023-10-15',
-    risk: 'low',
-    notes: 'Mild depression symptoms showing improvement',
-    responses: [
-      { questionId: 1, answer: 1 },
-      { questionId: 2, answer: 1 },
-      { questionId: 3, answer: 0 },
-      { questionId: 4, answer: 1 },
-      { questionId: 5, answer: 0 },
-      { questionId: 6, answer: 1 },
-      { questionId: 7, answer: 0 },
-      { questionId: 8, answer: 1 },
-      { questionId: 9, answer: 0 }
-    ],
-    mlPrediction: {
-      trend: 'stable',
-      confidence: 0.85,
-      nextPredictedScore: 6
-    },
-    recommendations: [
-      "Continue mindfulness practice",
-      "Maintain social connections"
-    ]
+// Transform MentalHealthAssessment to legacy Assessment format for compatibility
+const transformMentalHealthToAssessment = (mhAssessment: MentalHealthAssessment): Assessment => {
+  // Parse responses if they exist and convert to legacy format
+  const responses: Assessment['responses'] = [];
+  if ((mhAssessment as any).responses) {
+    Object.entries((mhAssessment as any).responses).forEach(([questionId, answer]) => {
+      responses.push({
+        questionId: parseInt(questionId),
+        answer: typeof answer === 'number' ? answer : parseInt(answer as string) || 0
+      });
+    });
   }
-];
 
-export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [loading, setLoading] = useState(true);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const mlInsights = (mhAssessment as any).mlInsights;
+  
+  return {
+    id: mhAssessment.id,
+    type: mhAssessment.type,
+    score: mhAssessment.score,
+    date: mhAssessment.date,
+    risk: mhAssessment.risk,
+    notes: mhAssessment.notes,
+    responses,
+    mlPrediction: mlInsights ? {
+      trend: mlInsights.severity === 'severe' ? 'worsening' : 
+             mlInsights.severity === 'mild' ? 'improving' : 'stable',
+      confidence: mlInsights.confidenceScore || 0.8,
+      nextPredictedScore: mhAssessment.score + (mlInsights.severity === 'severe' ? 5 : 
+                                                mlInsights.severity === 'mild' ? -3 : 0)
+    } : undefined,
+    recommendations: mlInsights?.recommendedActions || [],
+    assessor: mhAssessment.assessor
+  };
+};
 
-  // Load assessments from localStorage on mount
-  useEffect(() => {
-    const loadAssessments = () => {
-      try {
-        const storedAssessments = localStorage.getItem('mental_health_assessments');
-        
-        if (storedAssessments) {
-          // Use stored assessments if available
-          setAssessments(JSON.parse(storedAssessments));
-        } else {
-          // Otherwise use initial mock data
-          setAssessments(initialMockData);
-          // Save initial data to localStorage
-          localStorage.setItem('mental_health_assessments', JSON.stringify(initialMockData));
-        }
-      } catch (error) {
-        console.error('Error loading assessments from localStorage:', error);
-        // Fallback to mock data
-        setAssessments(initialMockData);
-      }
+export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {const { user, isAdmin, isCounselor } = useUser();
+    // Determine studentId based on user role
+  // Students see only their own data, admins and counselors see all data
+  const studentIdFilter = (isAdmin || isCounselor) ? undefined : user?.userId || 'anonymous';
+    // Use the new database hook
+  const {
+    assessments: dbAssessments,
+    loading: dbLoading,
+    deleteAssessment: dbDeleteAssessment,
+    refetch
+  } = useMentalHealthAssessments({ 
+    studentId: studentIdFilter 
+  });
+
+  // Transform database assessments to legacy format for compatibility
+  const assessments = dbAssessments.map(transformMentalHealthToAssessment);
+  const addAssessment = async (assessment: Omit<Assessment, 'id'>) => {
+    try {
+      console.log('Adding assessment to database:', assessment);
       
-      setLoading(false);
-    };
-
-    // Simulate loading delay
-    setTimeout(loadAssessments, 1000);
-  }, []);
-
-  // Save to localStorage whenever assessments change
-  useEffect(() => {
-    // Skip initial empty state
-    if (assessments.length > 0 && !loading) {
-      localStorage.setItem('mental_health_assessments', JSON.stringify(assessments));
+      // CRITICAL FIX: Resolve actual studentId from user's userId
+      let resolvedStudentId = 'anonymous';
+      if (user?.userId) {
+        try {
+          const student = await getStudentByUserId(user.userId);
+          if (student) {
+            resolvedStudentId = student.studentId;
+            console.log(`✅ Resolved userId ${user.userId} to studentId ${resolvedStudentId}`);
+          } else {
+            console.warn(`⚠️ No student record found for userId: ${user.userId}`);
+            resolvedStudentId = user.userId; // Fallback to userId for backward compatibility
+          }
+        } catch (error) {
+          console.error('❌ Error resolving studentId:', error);
+          resolvedStudentId = user.userId; // Fallback to userId
+        }
+      }
+        // Prepare the assessment data for API
+      const assessmentData = {
+        studentId: resolvedStudentId,
+        type: assessment.type,
+        score: assessment.score,
+        risk: assessment.risk,
+        notes: assessment.notes || '',
+        date: assessment.date,
+        category: 'self-assessment',
+        assessor: 'self-assessment',
+        responses: assessment.responses ? 
+          assessment.responses.reduce((acc, resp) => {
+            acc[resp.questionId.toString()] = resp.answer;
+            return acc;
+          }, {} as Record<string, number>) : {},
+        mlInsights: assessment.mlPrediction ? {
+          probability: assessment.mlPrediction.confidence,
+          condition: assessment.type,
+          severity: assessment.mlPrediction.trend === 'worsening' ? 'severe' : 
+                   assessment.mlPrediction.trend === 'improving' ? 'mild' : 'moderate',
+          confidenceScore: assessment.mlPrediction.confidence,
+          recommendedActions: assessment.recommendations || [],
+          riskFactors: []
+        } : undefined,
+        // Add DASS-21 specific data if present
+        subScores: assessment.subScores,
+        severityLevels: assessment.severityLevels
+      };
+      
+      // Save to database via API
+      const result = await createMentalHealthAssessment(assessmentData);
+      
+      console.log('Assessment saved successfully:', result);
+      
+      // Refresh the assessments list to include the new one
+      await refetch();
+        } catch (error) {
+      console.error('❌ Error saving assessment to database:', error);
+      // Database-only mode - no localStorage fallback
+      // User should be notified of the error and encouraged to retry
+      throw error;
     }
-  }, [assessments, loading]);
-
-  const addAssessment = (assessment: Omit<Assessment, 'id'>) => {
-    const highestId = assessments.reduce((max, item) => {
-      const id = parseInt(item.id);
-      return isNaN(id) ? max : Math.max(max, id);
-    }, 0);
-    
-    const newId = (highestId + 1).toString();
-    const newAssessment = { ...assessment, id: newId };
-    
-    const updatedAssessments = [newAssessment, ...assessments];
-    setAssessments(updatedAssessments);
   };
 
   const deleteAssessment = (id: string) => {
-    const updatedAssessments = assessments.filter(assessment => assessment.id !== id);
-    setAssessments(updatedAssessments);
+    dbDeleteAssessment(id);
+  };
+
+  const setLoading = () => {
+    // This is now handled by the database hook
+    // Keeping for compatibility but it's a no-op
   };
 
   return (
-    <AssessmentContext.Provider value={{ assessments, addAssessment, deleteAssessment, loading, setLoading }}>
+    <AssessmentContext.Provider value={{ 
+      assessments, 
+      addAssessment, 
+      deleteAssessment, 
+      loading: dbLoading, 
+      setLoading 
+    }}>
       {children}
     </AssessmentContext.Provider>
   );

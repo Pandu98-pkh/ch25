@@ -10,49 +10,79 @@ interface ClassFilterParams extends FilterParams {
 // Mock data untuk Classes
 const MOCK_CLASSES: Class[] = [
   {
-    id: '1',
+    classId: 'C2023-XI-IPA1', // Primary key for classes
+    schoolId: 'C2023-XI-IPA1', // Kept for backward compatibility
     name: 'XI IPA-1',
     gradeLevel: 'XI',
     academicYear: '2023/2024',
     teacherName: 'Budi Santoso',
-    studentCount: 32
+    studentCount: 32,
+    id: '1' // Kept for backward compatibility
   },
   {
-    id: '2',
+    classId: 'C2023-XII-IPS2', // Primary key for classes
+    schoolId: 'C2023-XII-IPS2', // Kept for backward compatibility
     name: 'XII IPS-2',
     gradeLevel: 'XII',
     academicYear: '2023/2024',
     teacherName: 'Siti Aminah',
-    studentCount: 28
+    studentCount: 28,
+    id: '2' // Kept for backward compatibility
   },
   {
-    id: '3',
+    classId: 'C2023-X-IPA3', // Primary key for classes
+    schoolId: 'C2023-X-IPA3', // Kept for backward compatibility
     name: 'X IPA-3',
     gradeLevel: 'X',
     academicYear: '2023/2024',
     teacherName: 'Ahmad Hidayat',
-    studentCount: 34
+    studentCount: 34,
+    id: '3' // Kept for backward compatibility
   }
 ];
 
 // Pengaturan untuk menggunakan mock data
-// Selalu menggunakan mock data secara default untuk mencegah error ketika backend tidak berjalan
-let useMockData = true;
+// Set to false to use real backend API
+let useMockData = false;
 
-// Memastikan semua class IDs unik
+// Memastikan semua class classIds unik
 const validateUniqueIds = (classes: Class[]): Class[] => {
+  const classIds = new Set<string>();
+  const result: Class[] = [];
+  
+  for (const classItem of classes) {
+    if (!classIds.has(classItem.classId)) {
+      classIds.add(classItem.classId);
+      result.push(classItem);
+    } else {
+      // Buat ID baru jika ditemukan duplikat
+      const newId = `${classItem.classId}-${Date.now()}`;
+      classIds.add(newId);
+      result.push({...classItem, classId: newId});
+    }
+  }
+  
+  return result;
+};
+
+// For backward compatibility, still maintain id uniqueness
+const validateLegacyIds = (classes: Class[]): Class[] => {
   const ids = new Set<string>();
   const result: Class[] = [];
   
   for (const classItem of classes) {
-    if (!ids.has(classItem.id)) {
-      ids.add(classItem.id);
-      result.push(classItem);
+    if (classItem.id) {
+      if (!ids.has(classItem.id)) {
+        ids.add(classItem.id);
+        result.push(classItem);
+      } else {
+        // Buat ID baru jika ditemukan duplikat
+        const newId = `${classItem.id}-${Date.now()}`;
+        ids.add(newId);
+        result.push({...classItem, id: newId});
+      }
     } else {
-      // Buat ID baru jika ditemukan duplikat
-      const newId = `${classItem.id}-${Date.now()}`;
-      ids.add(newId);
-      result.push({...classItem, id: newId});
+      result.push(classItem);
     }
   }
   
@@ -90,88 +120,89 @@ export const getClasses = async (
         }
       }
       
-      // Pastikan IDs unik sebelum dikembalikan
+      // Pastikan schoolIds unik sebelum dikembalikan
       const uniqueClasses = validateUniqueIds(filteredClasses);
+      // Also ensure legacy ids are unique for backward compatibility
+      const uniqueClassesWithLegacyIds = validateLegacyIds(uniqueClasses);
       
       return {
-        data: uniqueClasses,
+        data: uniqueClassesWithLegacyIds,
         totalPages: 1,
         currentPage: 1,
-        count: uniqueClasses.length
+        count: uniqueClassesWithLegacyIds.length
       };
     }
-    
-    try {
+      try {
       // Setup AbortController for timeout handling
       const { signal, clearTimeout } = createAbortController();
+        console.log('🔌 Making API request to:', `/classes`);
+      console.log('📊 Filters:', filters);
+      console.log('📄 Page:', page, 'Limit:', limit);
       
-      const response = await api.get('/classes/', {
+      const response = await api.get('/classes', {
         signal,
-        params: { 
-          page, 
+        params: {
+          page,
           limit,
-          ...filters 
-        }
-      });
+          ...filters
+        }      });
       
       // Clear timeout as request completed successfully
       clearTimeout();
       
+      console.log('✅ API Response received:', response.data);
+      
       // Pastikan data dari API juga memiliki ID unik
-      const uniqueClasses = validateUniqueIds(response.data.results || []);
+      const uniqueClasses = validateUniqueIds(response.data.data || []);
+      // Also ensure legacy ids are unique for backward compatibility
+      const uniqueClassesWithLegacyIds = validateLegacyIds(uniqueClasses);
       
       return {
-        data: uniqueClasses,
-        currentPage: response.data.current_page || page,
-        totalPages: response.data.total_pages || Math.ceil((response.data.count || 0) / limit),
-        count: response.data.count || uniqueClasses.length
+        data: uniqueClassesWithLegacyIds,
+        currentPage: response.data.currentPage || page,
+        totalPages: response.data.totalPages || Math.ceil((response.data.totalRecords || 0) / limit),
+        count: response.data.totalRecords || uniqueClassesWithLegacyIds.length
       };
     } catch (error) {
       console.error('Error fetching classes with API:', error);
       throw error;
-    }
-  } catch (error) {
+    }  } catch (error) {
     console.error('Error fetching classes:', error);
     
-    // Selalu fallback ke mock data jika terjadi error
-    useMockData = true;
+    // DON'T set global useMockData flag - let other functions try the API independently
+    console.log('⚠️ API call failed, but keeping API connection alive for other functions');
     
-    // Pastikan IDs unik sebelum dikembalikan
-    const uniqueClasses = validateUniqueIds(MOCK_CLASSES);
-    
-    return {
-      data: uniqueClasses,
-      totalPages: 1,
-      currentPage: 1,
-      count: uniqueClasses.length
-    };
+    // Return empty data instead of fallback to prevent confusion
+    throw error;
   }
 };
 
 export const getClass = async (id: string): Promise<Class> => {
   try {
-    if (useMockData) {
-      const classItem = MOCK_CLASSES.find(c => c.id === id);
-      if (!classItem) throw new Error('Class not found');
-      return classItem;
-    }
-    
     // Setup AbortController for timeout handling
     const { signal, clearTimeout } = createAbortController();
-    
-    const response = await api.get(`/classes/${id}/`, { signal });
+      console.log('🔌 Fetching class with ID:', id);
+    const response = await api.get(`/classes/${id}`, { signal });
     
     // Clear timeout as request completed successfully
     clearTimeout();
+    console.log('✅ Class data fetched:', response.data);
     
     return response.data;
   } catch (error) {
     console.error(`Error fetching class with ID ${id}:`, error);
     
-    // Fallback ke mock data jika terjadi error koneksi
-    if (useMockData) {
-      const mockClass = MOCK_CLASSES.find(c => c.id === id);
-      if (mockClass) return mockClass;
+    // Fallback to mock data if available
+    let mockClass = MOCK_CLASSES.find(c => c.schoolId === id);
+    
+    // If not found by schoolId, try with legacy id
+    if (!mockClass) {
+      mockClass = MOCK_CLASSES.find(c => c.id === id);
+    }
+    
+    if (mockClass) {
+      console.log('📋 Using mock data for class:', id);
+      return mockClass;
     }
     
     throw error;
@@ -182,19 +213,27 @@ export const getClassStudents = async (classId: string) => {
   try {
     if (useMockData) {
       // Get the class to determine student count
-      const classItem = MOCK_CLASSES.find(c => c.id === classId);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let classItem = MOCK_CLASSES.find(c => c.schoolId === classId);
+      
+      // If not found by schoolId, try with legacy id
+      if (!classItem) {
+        classItem = MOCK_CLASSES.find(c => c.id === classId);
+      }
+      
       if (!classItem) throw new Error('Class not found');
       
       // Generate mock students for the class
       const mockStudents = Array.from({ length: classItem.studentCount }, (_, i) => ({
-        id: `student-${classId}-${i+1}`,
+        studentId: `S-${classId}-${i+1}`, // Use studentId as primary key
         name: `Student ${i+1}`,
         email: `student${i+1}@example.com`,
         grade: classItem.gradeLevel.split(' ')[0],
         class: classItem.name,
         tingkat: classItem.gradeLevel.split(' ')[0],
         kelas: classItem.name,
-        academicStatus: ['good', 'warning', 'critical'][Math.floor(Math.random() * 3)]
+        academicStatus: ['good', 'warning', 'critical'][Math.floor(Math.random() * 3)],
+        id: `student-${classId}-${i+1}` // Kept for backward compatibility
       }));
       
       return {
@@ -220,18 +259,26 @@ export const getClassStudents = async (classId: string) => {
     
     if (useMockData) {
       // Fallback to mock data
-      const classItem = MOCK_CLASSES.find(c => c.id === classId);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let classItem = MOCK_CLASSES.find(c => c.schoolId === classId);
+      
+      // If not found by schoolId, try with legacy id
+      if (!classItem) {
+        classItem = MOCK_CLASSES.find(c => c.id === classId);
+      }
+      
       if (!classItem) throw new Error('Class not found');
       
       const mockStudents = Array.from({ length: 5 }, (_, i) => ({
-        id: `student-${classId}-${i+1}`,
+        studentId: `S-${classId}-${i+1}`, // Use studentId as primary key
         name: `Student ${i+1}`,
         email: `student${i+1}@example.com`,
         grade: classItem.gradeLevel.split(' ')[0],
         class: classItem.name,
         tingkat: classItem.gradeLevel.split(' ')[0],
         kelas: classItem.name,
-        academicStatus: ['good', 'warning', 'critical'][Math.floor(Math.random() * 3)]
+        academicStatus: ['good', 'warning', 'critical'][Math.floor(Math.random() * 3)],
+        id: `student-${classId}-${i+1}` // Kept for backward compatibility
       }));
       
       return {
@@ -244,13 +291,24 @@ export const getClassStudents = async (classId: string) => {
   }
 };
 
-export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> => {
+export const createClass = async (classData: Omit<Class, 'id' | 'schoolId'> & { schoolId?: string }): Promise<Class> => {
   try {
     if (useMockData) {
+      // Generate a school ID if not provided
+      const academicYear = classData.academicYear?.split('/')[0] || new Date().getFullYear();
+      const schoolId = classData.schoolId || `C${academicYear}-${classData.gradeLevel}-${classData.name.replace(/\s/g, '')}`;
+      
+      // Check if schoolId already exists
+      if (MOCK_CLASSES.some(c => c.schoolId === schoolId)) {
+        throw new Error('School ID already exists. Please use a different ID.');
+      }
+      
       const newClass: Class = {
         ...classData,
-        id: String(MOCK_CLASSES.length + 1)
+        schoolId,
+        id: String(MOCK_CLASSES.length + 1) // Maintain legacy id for backward compatibility
       };
+      
       MOCK_CLASSES.push(newClass);
       return newClass;
     }
@@ -258,7 +316,7 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
     // Setup AbortController for timeout handling
     const { signal, clearTimeout } = createAbortController();
     
-    const response = await api.post('/classes/', classData, { signal });
+    const response = await api.post('/classes', classData, { signal });
     
     // Clear timeout as request completed successfully
     clearTimeout();
@@ -270,10 +328,21 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
     // Fallback ke mock data jika terjadi error koneksi
     if (!useMockData) {
       useMockData = true;
+      // Generate a school ID if not provided
+      const academicYear = classData.academicYear?.split('/')[0] || new Date().getFullYear();
+      const schoolId = classData.schoolId || `C${academicYear}-${classData.gradeLevel}-${classData.name.replace(/\s/g, '')}`;
+      
+      // Check if schoolId already exists
+      if (MOCK_CLASSES.some(c => c.schoolId === schoolId)) {
+        throw new Error('School ID already exists. Please use a different ID.');
+      }
+      
       const newClass: Class = {
         ...classData,
-        id: String(Date.now())  // Gunakan timestamp sebagai ID unik
+        schoolId,
+        id: String(Date.now())  // Gunakan timestamp sebagai ID unik (legacy)
       };
+      
       MOCK_CLASSES.push(newClass);
       return newClass;
     }
@@ -282,11 +351,25 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
   }
 };
 
-export const updateClass = async (id: string, classData: Partial<Class>): Promise<Class> => {
+export const updateClass = async (schoolId: string, classData: Partial<Class>): Promise<Class> => {
   try {
     if (useMockData) {
-      const index = MOCK_CLASSES.findIndex(c => c.id === id);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let index = MOCK_CLASSES.findIndex(c => c.schoolId === schoolId);
+      
+      // If not found by schoolId, try with legacy id
+      if (index === -1) {
+        index = MOCK_CLASSES.findIndex(c => c.id === schoolId);
+      }
+      
       if (index === -1) throw new Error('Class not found');
+      
+      // If trying to update schoolId, check if it already exists
+      if (classData.schoolId && classData.schoolId !== MOCK_CLASSES[index].schoolId) {
+        if (MOCK_CLASSES.some(c => c.schoolId === classData.schoolId)) {
+          throw new Error('School ID already exists. Please use a different ID.');
+        }
+      }
       
       MOCK_CLASSES[index] = {
         ...MOCK_CLASSES[index],
@@ -299,19 +382,26 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
     // Setup AbortController for timeout handling
     const { signal, clearTimeout } = createAbortController();
     
-    const response = await api.patch(`/classes/${id}/`, classData, { signal });
+    const response = await api.patch(`/classes/${schoolId}/`, classData, { signal });
     
     // Clear timeout as request completed successfully
     clearTimeout();
     
     return response.data;
   } catch (error) {
-    console.error(`Error updating class with ID ${id}:`, error);
+    console.error(`Error updating class with ID ${schoolId}:`, error);
     
     // If using real API but encountered an error, fallback to mock
     if (!useMockData) {
       useMockData = true;
-      const index = MOCK_CLASSES.findIndex(c => c.id === id);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let index = MOCK_CLASSES.findIndex(c => c.schoolId === schoolId);
+      
+      // If not found by schoolId, try with legacy id
+      if (index === -1) {
+        index = MOCK_CLASSES.findIndex(c => c.id === schoolId);
+      }
+      
       if (index === -1) throw new Error('Class not found');
       
       MOCK_CLASSES[index] = {
@@ -326,10 +416,17 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
   }
 };
 
-export const deleteClass = async (id: string): Promise<boolean> => {
+export const deleteClass = async (schoolId: string): Promise<boolean> => {
   try {
     if (useMockData) {
-      const index = MOCK_CLASSES.findIndex(c => c.id === id);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let index = MOCK_CLASSES.findIndex(c => c.schoolId === schoolId);
+      
+      // If not found by schoolId, try with legacy id
+      if (index === -1) {
+        index = MOCK_CLASSES.findIndex(c => c.id === schoolId);
+      }
+      
       if (index === -1) throw new Error('Class not found');
       
       MOCK_CLASSES.splice(index, 1);
@@ -339,19 +436,26 @@ export const deleteClass = async (id: string): Promise<boolean> => {
     // Setup AbortController for timeout handling
     const { signal, clearTimeout } = createAbortController();
     
-    await api.delete(`/classes/${id}/`, { signal });
+    await api.delete(`/classes/${schoolId}/`, { signal });
     
     // Clear timeout as request completed successfully
     clearTimeout();
     
     return true;
   } catch (error) {
-    console.error(`Error deleting class with ID ${id}:`, error);
+    console.error(`Error deleting class with ID ${schoolId}:`, error);
     
     // If using real API but encountered an error, fallback to mock
     if (!useMockData) {
       useMockData = true;
-      const index = MOCK_CLASSES.findIndex(c => c.id === id);
+      // Try to find class by schoolId first, then fall back to legacy id
+      let index = MOCK_CLASSES.findIndex(c => c.schoolId === schoolId);
+      
+      // If not found by schoolId, try with legacy id
+      if (index === -1) {
+        index = MOCK_CLASSES.findIndex(c => c.id === schoolId);
+      }
+      
       if (index === -1) throw new Error('Class not found');
       
       MOCK_CLASSES.splice(index, 1);
@@ -366,4 +470,117 @@ export const deleteClass = async (id: string): Promise<boolean> => {
 export const toggleClassMockData = (enable?: boolean) => {
   useMockData = enable !== undefined ? enable : !useMockData;
   return useMockData;
+};
+
+// Delete management functions
+export const getDeletedClasses = async (): Promise<Class[]> => {
+  try {
+    const { signal, clearTimeout } = createAbortController();
+    
+    console.log('🔌 Fetching deleted classes from API...');
+    const response = await api.get('/admin/classes/deleted', { signal });
+    
+    clearTimeout();
+    console.log('✅ Deleted classes fetched successfully:', response.data);
+    
+    return response.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching deleted classes:', error);
+    throw error;
+  }
+};
+
+export const restoreClass = async (classId: string): Promise<Class> => {
+  try {
+    const { signal, clearTimeout } = createAbortController();
+    
+    console.log('🔄 Restoring class:', classId);
+    const response = await api.put(`/admin/classes/${classId}/restore`, {}, { signal });
+    
+    clearTimeout();
+    console.log('✅ Class restored successfully:', response.data);
+    
+    return response.data.class;
+  } catch (error) {
+    console.error('❌ Error restoring class:', error);
+    throw error;
+  }
+};
+
+export const hardDeleteClass = async (classId: string): Promise<boolean> => {
+  try {
+    const { signal, clearTimeout } = createAbortController();
+    
+    console.log('🗑️ Permanently deleting class:', classId);
+    await api.delete(`/admin/classes/${classId}/hard-delete`, { signal });
+    
+    clearTimeout();
+    console.log('✅ Class permanently deleted');
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error permanently deleting class:', error);
+    throw error;
+  }
+};
+
+// Soft delete for regular class deletion
+export const softDeleteClass = async (classId: string): Promise<boolean> => {
+  try {
+    const { signal, clearTimeout } = createAbortController();
+    
+    console.log('🗑️ Soft deleting class:', classId);
+    await api.delete(`/classes/${classId}`, { signal });
+    
+    clearTimeout();
+    console.log('✅ Class soft deleted');
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error soft deleting class:', error);
+    throw error;
+  }
+};
+
+// Get actual student count from database
+export const getClassStudentCount = async (classId: string): Promise<number> => {
+  try {
+    const { signal, clearTimeout } = createAbortController();
+      console.log('🔌 Fetching student count for class:', classId);
+    const response = await api.get(`/classes/${classId}/students`, { signal });
+    
+    clearTimeout();
+    console.log('✅ Student count fetched:', response.data.count);
+    
+    return response.data.count || 0;
+  } catch (error) {
+    console.error('❌ Error fetching student count for class:', classId, error);
+    
+    // Try to get the count from the class data as fallback
+    try {
+      const classData = await getClass(classId);
+      return classData.studentCount || 0;
+    } catch (classError) {
+      console.error('❌ Could not get fallback count from class data:', classError);
+      return 0;
+    }
+  }
+};
+
+// Get students in a class with detailed information
+export const getClassStudentsDetailed = async (classId: string) => {  try {
+    const { signal, clearTimeout } = createAbortController();
+    
+    const response = await api.get(`/classes/${classId}/students`, { signal });
+    
+    clearTimeout();
+    
+    return {
+      students: response.data.students || [],
+      count: response.data.count || 0
+    };
+  } catch (error) {
+    console.error('❌ Error fetching detailed students for class:', classId, error);
+    return { students: [], count: 0 };
+  }
 };

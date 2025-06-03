@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPIConnection() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                console.log('Testing API connection to http://localhost:5000/api/classes');
+                resultsDiv.innerHTML = '<p>Testing API connection...</p>';
+                
+                const response = await fetch('http://localhost:5000/api/classes', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                resultsDiv.innerHTML = `
+                    <h2>✅ API Connection Successful!</h2>
+                    <p><strong>Total Classes:</strong> ${data.totalRecords}</p>
+                    <p><strong>Classes Found:</strong></p>
+                    <ul>
+                        ${data.data.map(cls => `
+                            <li>
+                                <strong>${cls.name}</strong> - ${cls.teacherName} 
+                                (${cls.studentCount} students, Grade ${cls.gradeLevel})
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('API Connection Error:', error);
+                resultsDiv.innerHTML = `
+                    <h2>❌ API Connection Failed!</h2>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Please check:</p>
+                    <ul>
+                        <li>Backend server is running on port 5000</li>
+                        <li>CORS is properly configured</li>
+                        <li>Network connectivity</li>
+                    </ul>
+                `;
+            }
+        }
+        
+        // Test API connection when page loads
+        window.addEventListener('load', testAPIConnection);
+    </script>
+</body>
+</html>

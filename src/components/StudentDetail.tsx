@@ -70,12 +70,12 @@ export default function StudentDetail() {
   }, [id, loadStudentData]);
 
   const handleGenerateReport = async () => {
-    if (!student?.id) return;
+    if (!student?.studentId) return;
 
     try {
       setGenerating(true);
       const params: ReportParams = {
-        studentId: student.id,
+        studentId: student.studentId,
         includeAssessments: true,
         includeBehavior: true,
         includeSessions: true
@@ -114,7 +114,7 @@ export default function StudentDetail() {
         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <p className="text-red-600 font-medium mb-4">{error || t('errors.studentNotFound')}</p>
         <button
-          onClick={() => navigate('/students')}
+          onClick={() => navigate('/app/students')}
           className="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
         >
           {t('actions.backToStudents')}
@@ -137,8 +137,9 @@ export default function StudentDetail() {
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
             <button
-              onClick={() => navigate('/students')}
+              onClick={() => navigate(-1)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title={t('actions.goBack', 'Kembali')}
             >
               <ArrowLeft className="h-5 w-5 text-gray-500" />
             </button>
@@ -237,6 +238,20 @@ export default function StudentDetail() {
           
           <div className="p-4 rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center">
+              <div className="p-2 rounded-full bg-green-50">
+                <User className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs text-gray-500">{t('studentDetail.studentId', 'Nomor Induk Siswa')}</p>
+                <p className="font-medium text-gray-900">
+                  {student.studentId || t('studentDetail.notAvailable', 'N/A')}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-xl border border-gray-200 bg-white">
+            <div className="flex items-center">
               <div className="p-2 rounded-full bg-purple-50">
                 <BookOpen className="h-5 w-5 text-purple-600" />
               </div>
@@ -304,7 +319,7 @@ export default function StudentDetail() {
           </TabsContent>
 
           <TabsContent value="mental-health" className="mt-0 focus:outline-none">
-            <MentalHealthPage studentId={student.id} />
+            <MentalHealthPage />
           </TabsContent>
 
           <TabsContent value="behavior" className="mt-0 focus:outline-none">

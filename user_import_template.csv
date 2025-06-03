@@ -1,0 +1,49 @@
+name,email,role,username,userId
+Administrator,admin@example.com,admin,admin,ADM-2025-001
+Dr. Michael Chen,michael.chen@example.com,admin,michael.chen,ADM-2025-002
+John Doe,johndoe@example.com,admin,johndoe,ADM-2025-003
+Alice Brown,alicebrown@example.com,counselor,alicebrown,KSL-2025-001
+Dr. Sarah Johnson,sarah.johnso@example.com,counselor,sarah.johnso,KSL-2025-002
+Jane Smith,janesmith@example.com,counselor,janesmith,KSL-2025-003
+Aditya Pratama,adityapratama@example.com,student,adityapratama,1103250001
+Agus Wijaya,aguswijaya@example.com,student,aguswijaya,1103250002
+Alice Smith,alice.smith@example.com,student,alice.smith,1103250003
+Ayu Wulandari,ayuwulandari@example.com,student,ayuwulandari,1103250004
+Bayu Krisna,bayukrisna@example.com,student,bayukrisna,1103250005
+Bob Johnson,bob.johnson@example.com,student,bob.johnson,1103250006
+Bob Wilson,bobwilson@example.com,student,bobwilson,1103250007
+Budi Santoso,budisantoso@example.com,student,budisantoso,1103250008
+Carol Davis,carol.davis@example.com,student,carol.davis,1103250009
+Charlie Green,charliegreen@example.com,student,charliegreen,1103250010
+Citra Dewi,citradewi@example.com,student,citradewi,1103250011
+David Wilson,david.wilson@example.com,student,david.wilson,1103250012
+Dewi Lestari,dewilestari@example.com,student,dewilestari,1103250013
+Dimas Saputra,dimassaputra@example.com,student,dimassaputra,1103250014
+Eko Prasetyo,ekoprasetyo@example.com,student,ekoprasetyo,1103250015
+Emma Brown,emma.brown@example.com,student,emma.brown,1103250016
+Fajar Setiawan,fajarsetiawan@example.com,student,fajarsetiawan,1103250017
+Fitri Handayani,fitrihandayani@example.com,student,fitrihandayani,1103250018
+Frank Miller,frank.miller@example.com,student,frank.miller,1103250019
+Gilang Ramadhan,gilangramadhan@example.com,student,gilangramadhan,1103250020
+Gita Maharani,gitamaharani@example.com,student,gitamaharani,1103250021
+Grace Lee,grace.lee@example.com,student,grace.lee,1103250022
+haky,haky@example.com,student,haky,1103210016
+Hana Yulianti,hanayulianti@example.com,student,hanayulianti,1103250023
+Hendra Gunawan,hendragunawan@example.com,student,hendragunawan,1103250024
+Henry Zhang,henry.zhang@example.com,student,henry.zhang,1103250025
+Indah Sari,indahsari@example.com,student,indahsari,1103250026
+Irfan Maulana,irfanmaulana@example.com,student,irfanmaulana,1103250027
+Jihan Permata,jihanpermata@example.com,student,jihanpermata,1103250028
+Joko Susilo,jokosusilo@example.com,student,jokosusilo,1103250029
+Lina Marlina,linamarlina@example.com,student,linamarlina,1103250030
+Maya Wati,mayawati@example.com,student,mayawati,1103250031
+Muhammad Zaki,muhammadzaki@example.com,student,muhammadzaki,1103250032
+Nurul Hidayah,nurulhidayah@example.com,student,nurulhidayah,1103250033
+Pandu Kaya Hakiki,pandukh@example.com,student,pandukh,1103220016
+Putri Amelia,puttriamelia@example.com,student,puttriamelia,1103250034
+Ratna Kusuma,ratnakusuma@example.com,student,ratnakusuma,1103250035
+Rizky Nugroho,rizkynugroho@example.com,student,rizkynugroho,1103250036
+Sari Puspita,saripuspita@example.com,student,saripuspita,1103250037
+Siti Aminah,sitiaminah@example.com,student,sitiaminah,1103250038
+Surya Abdullah,suryaabdullah@example.com,student,suryaabdullah,1103250039
+Yoga Purnomo,yogapurnomo@example.com,student,yogapurnomo,1103250040

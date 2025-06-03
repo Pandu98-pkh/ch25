@@ -39,7 +39,7 @@ const initialNotifications: Notification[] = [
     type: 'success',
     read: false,
     date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    link: '/mental-health'
+    link: '/app/mental-health'
   },
   {
     id: '3',

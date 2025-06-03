@@ -1,22 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Student, FilterParams } from '../types';
-import StudentCard from './StudentCard';
+import StudentView from './StudentView';
 import AddStudentForm from './AddStudentForm';
-import { Search, RefreshCcw, AlertCircle, Filter, UserPlus, CheckCircle2, Clock, Users } from 'lucide-react';
+import DeletedStudentsManagement from './DeletedStudentsManagement';
+import { Search, RefreshCcw, AlertCircle, Filter, UserPlus, CheckCircle2, Clock, Users, Archive } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getStudents, createStudent } from '../services/studentService';
+import { getStudents, createStudent, updateStudent, deleteStudent } from '../services/studentService';
 import axios, { AxiosError } from 'axios';
 import { createAbortController } from '../services/api';
 import { cn } from '../utils/cn';
 
 interface ApiErrorResponse {
   detail?: string;
+  error?: string;
+  showModal?: boolean;
 }
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [showDeletedStudents, setShowDeletedStudents] = useState(false);
+  const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +46,8 @@ export default function StudentsPage() {
       if (searchTerm) filters.searchQuery = searchTerm;
       if (filterStatus !== 'all') filters.academicStatus = filterStatus;
       
-      const response = await getStudents(filters, currentPage);
+      // Use a high limit to get all students for frontend filtering
+      const response = await getStudents(filters, currentPage, 1000);
       clearTimeout();
       
       if (response && response.data) {
@@ -81,12 +89,64 @@ export default function StudentsPage() {
       setShowAddForm(false);
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
-      setError(axiosError.response?.data?.detail || t('errors.creatingStudent') || 'Gagal membuat data siswa');
+      
+      // Check if this is a user already exists error that should be handled by modal
+      if (axiosError.response?.data?.showModal || axiosError.response?.data?.error === 'USER_ALREADY_EXISTS') {
+        // Let AddStudentForm handle this error with modal
+        throw err;
+      } else {
+        // Handle other errors normally
+        setError(axiosError.response?.data?.detail || t('errors.creatingStudent') || 'Gagal membuat data siswa');
+      }
+    }
+  };
+
+  const handleEditStudent = async (updatedStudent: Student) => {
+    try {
+      setError(null);
+      if (!updatedStudent.studentId && !updatedStudent.id) return;
+      
+      const studentId = updatedStudent.studentId || updatedStudent.id;
+      if (!studentId) return;
+      
+      const editedStudent = await updateStudent(studentId, updatedStudent);
+      
+      // Update student in local state
+      setStudents(prevStudents => 
+        prevStudents.map(student => 
+          (student.studentId === studentId || student.id === studentId) 
+            ? editedStudent 
+            : student
+        )
+      );
+      
+      setShowEditForm(false);
+      setCurrentStudent(null);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.detail || t('errors.updatingStudent') || 'Gagal mengupdate data siswa');
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      setError(null);
+      await deleteStudent(studentId);
+      setStudents(prevStudents => 
+        prevStudents.filter(student => 
+          student.studentId !== studentId && student.id !== studentId
+        )
+      );
+      setShowConfirmDeleteModal(false);
+      setCurrentStudent(null);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.detail || t('errors.deletingStudent') || 'Gagal menghapus data siswa');
     }
   };
 
   const handleStudentClick = (student: Student) => {
-    navigate(`/students/${student.id}`);
+    navigate(`/app/students/${student.studentId || student.id}`);
   };
 
   const handleRetry = () => {
@@ -115,6 +175,15 @@ export default function StudentsPage() {
       case 'critical': return <AlertCircle className="h-4 w-4 mr-1" />;
     }
   };
+
+  // Show deleted students view when toggled
+  if (showDeletedStudents) {
+    return (
+      <DeletedStudentsManagement 
+        onBack={() => setShowDeletedStudents(false)}
+      />
+    );
+  }
 
   return (
     <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
@@ -175,13 +244,22 @@ export default function StudentsPage() {
                 ))}
               </div>
             </div>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm transition-all duration-200 transform hover:scale-105"
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              {t('students.add')}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeletedStudents(true)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200 hover:text-orange-600 hover:border-orange-500"
+              >
+                <Archive className="h-5 w-5 mr-2" />
+                Siswa Dihapus
+              </button>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm transition-all duration-200 transform hover:scale-105"
+              >
+                <UserPlus className="h-5 w-5 mr-2" />
+                {t('students.add')}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -233,7 +311,7 @@ export default function StudentsPage() {
         </div>
       ) : (
         <>
-          {/* Empty State with Better Design */}
+          {/* Student View with Table/Card Toggle */}
           {filteredStudents.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="bg-gray-100 w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4">
@@ -255,18 +333,56 @@ export default function StudentsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredStudents.map((student) => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  onClick={handleStudentClick}
-                />
-              ))}
-            </div>
+            <StudentView
+              students={filteredStudents}
+              defaultView="table" // Default to table view for better performance
+              onStudentClick={handleStudentClick}
+              onStudentEdit={(student) => {
+                setCurrentStudent(student);
+                setShowEditForm(true);
+              }}
+              onStudentDelete={(student) => {
+                setCurrentStudent(student);
+                setShowConfirmDeleteModal(true);
+              }}
+              onBulkAction={(students, action) => {
+                // Handle bulk actions like export, bulk delete, etc.
+                console.log('Bulk action:', action, 'on', students.length, 'students');
+                
+                if (action === 'delete') {
+                  // Refresh the students list after bulk delete
+                  loadStudents();
+                } else if (action === 'export') {
+                  // Implement CSV export or other export functionality
+                  const csvData = students.map(student => ({
+                    name: student.name,
+                    email: student.email,
+                    class: `${student.tingkat || student.grade} ${student.kelas || student.class}`,
+                    status: student.academicStatus,
+                    mentalHealthScore: student.mentalHealthScore
+                  }));
+                  
+                  // Convert to CSV and download
+                  const csvContent = [
+                    'Name,Email,Class,Status,Mental Health Score',
+                    ...csvData.map(row => 
+                      `"${row.name}","${row.email}","${row.class}","${row.status}","${row.mentalHealthScore || ''}"`
+                    )
+                  ].join('\n');
+                  
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `students-export-${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                }
+              }}
+            />
           )}
 
-          {/* Pagination with Enhanced Design */}
+          {/* Pagination with Enhanced Design - only show if not using table view pagination */}
           {totalPages > 1 && (
             <div className="mt-8 flex justify-center">
               <nav className="inline-flex rounded-lg shadow-sm bg-white border border-gray-200 overflow-hidden divide-x divide-gray-200">
@@ -299,6 +415,42 @@ export default function StudentsPage() {
           onClose={() => setShowAddForm(false)}
           onSubmit={handleAddStudent}
         />
+      )}
+      {showEditForm && currentStudent && (
+        <AddStudentForm
+          student={currentStudent}
+          onClose={() => setShowEditForm(false)}
+          onSubmit={handleEditStudent}
+        />
+      )}
+      {showConfirmDeleteModal && currentStudent && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-4">{t('students.confirmDeleteTitle')}</h2>
+            <p className="text-gray-700 mb-6">
+              {t('students.confirmDeleteMessage') || `Apakah Anda yakin ingin menghapus siswa ${currentStudent.name}?`}
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowConfirmDeleteModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                {t('actions.cancel') || 'Batal'}
+              </button>
+              <button
+                onClick={() => {
+                  const studentId = currentStudent.studentId || currentStudent.id;
+                  if (studentId) {
+                    handleDeleteStudent(studentId);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200"
+              >
+                {t('actions.delete') || 'Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

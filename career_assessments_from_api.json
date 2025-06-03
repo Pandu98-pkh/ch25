@@ -1,0 +1,150 @@
+[
+  {
+    "createdAt": "2025-05-29T06:38:08",
+    "date": "2025-05-29T06:38:08",
+    "id": "mbti-1748475488-S202577B95",
+    "interests": [
+      "INFP"
+    ],
+    "notes": "MBTI Assessment - Strong preference for introverted feeling",
+    "recommendedPaths": [
+      "Psychologist",
+      "Writer",
+      "Counselor"
+    ],
+    "results": {
+      "description": "The Mediator personality type",
+      "traits": {
+        "extraversion": 20,
+        "judging": 35,
+        "sensing": 30,
+        "thinking": 25
+      },
+      "type": "INFP"
+    },
+    "skills": [
+      "empathy",
+      "creativity"
+    ],
+    "studentEmail": "test.editdelete.378805@school.edu",
+    "studentId": "S202577B95",
+    "studentName": "Edit Delete Test Student 378805",
+    "type": "mbti",
+    "updatedAt": "2025-05-29T06:38:08",
+    "values": [
+      "authenticity",
+      "personal_growth"
+    ]
+  },
+  {
+    "createdAt": "2025-05-29T01:58:50",
+    "date": "2025-05-29T01:58:50",
+    "id": "riasec-1748458730-S202577B95",
+    "interests": [
+      "Artistic",
+      "Social"
+    ],
+    "notes": "Test assessment from integration testing",
+    "recommendedPaths": [
+      "Graphic Design",
+      "Psychology"
+    ],
+    "results": {
+      "artistic": 90,
+      "conventional": 45,
+      "enterprising": 60,
+      "investigative": 55,
+      "realistic": 40,
+      "social": 85
+    },
+    "skills": [
+      "creativity",
+      "communication"
+    ],
+    "studentEmail": "test.editdelete.378805@school.edu",
+    "studentId": "S202577B95",
+    "studentName": "Edit Delete Test Student 378805",
+    "type": "riasec",
+    "updatedAt": "2025-05-29T01:58:50",
+    "values": [
+      "self_expression",
+      "helping_others"
+    ]
+  },
+  {
+    "createdAt": "2025-05-26T08:02:30",
+    "date": "2024-01-30T15:00:00",
+    "id": "CAR_ABB921B3",
+    "interests": [
+      "[\"Artistic\"",
+      " \"Social\"]"
+    ],
+    "notes": "Strong creative and social inclinations",
+    "recommendedPaths": [
+      "[\"Graphic Design\"",
+      " \"Psychology\"",
+      " \"Creative Writing\"]"
+    ],
+    "results": {
+      "artistic": 92,
+      "conventional": 45,
+      "enterprising": 60,
+      "investigative": 55,
+      "realistic": 40,
+      "social": 85
+    },
+    "skills": [
+      "[\"creativity\"",
+      " \"communication\"",
+      " \"artistic_ability\"]"
+    ],
+    "studentEmail": "stu005@student.edu",
+    "studentId": "STU005",
+    "studentName": "Student STU005",
+    "type": "riasec",
+    "updatedAt": "2025-05-28T07:39:21",
+    "values": [
+      "[\"creativity\"",
+      " \"helping_others\"",
+      " \"self_expression\"]"
+    ]
+  },
+  {
+    "createdAt": "2025-05-26T08:02:30",
+    "date": "2024-01-25T11:15:00",
+    "id": "CAR_C1884578",
+    "interests": [
+      "[\"Investigative\"",
+      " \"Realistic\"]"
+    ],
+    "notes": "Strong aptitude for STEM fields",
+    "recommendedPaths": [
+      "[\"Engineering\"",
+      " \"Computer Science\"",
+      " \"Data Science\"]"
+    ],
+    "results": {
+      "artistic": 45,
+      "conventional": 70,
+      "enterprising": 55,
+      "investigative": 90,
+      "realistic": 85,
+      "social": 60
+    },
+    "skills": [
+      "[\"mathematics\"",
+      " \"problem_solving\"",
+      " \"logical_thinking\"]"
+    ],
+    "studentEmail": "stu003@student.edu",
+    "studentId": "STU003",
+    "studentName": "Student STU003",
+    "type": "riasec",
+    "updatedAt": "2025-05-28T07:39:21",
+    "values": [
+      "[\"achievement\"",
+      " \"independence\"",
+      " \"intellectual_stimulation\"]"
+    ]
+  }
+]

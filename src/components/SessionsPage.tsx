@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Calendar as CalendarIcon, Clock, Search, Plus, Filter, Download, BarChart3, User, ArrowUp, ArrowDown, X, ChevronDown, FileText, Bell, BarChart, Eye, Pencil, Trash2, Calendar, List, ArrowLeft, ArrowRight, BookOpen, Activity, Brain, Briefcase, Users } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Search, Plus, Filter, Download, BarChart3, User, ArrowUp, ArrowDown, X, ChevronDown, FileText, Bell, BarChart, Eye, Pencil, Trash2, Calendar, List, ArrowLeft, ArrowRight, BookOpen, Activity, Brain, Briefcase, Users, Check, XCircle, AlertTriangle } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfMonth, endOfMonth, addDays, isFuture, startOfWeek, endOfWeek, eachDayOfInterval, getDate, isSameDay, isSameMonth, subDays, addMonths, subMonths, setHours } from 'date-fns';
-import { useLanguage } from '../contexts/LanguageContext';
-import { CounselingSession } from '../types';
-import { getSessions, createSession, deleteSession } from '../services/sessionService';
+import { useUser } from '../contexts/UserContext';
+import { CounselingSession, Student } from '../types';
+import { getSessions, createSession, deleteSession, updateSession, approveSession, rejectSession } from '../services/sessionService';
+import { getStudents } from '../services/studentService';
+import { getCounselors, Counselor } from '../services/counselorService';
 import SessionCharts from './analytics/SessionCharts';
 import StudentQuickView from './students/StudentQuickView';
 import NotificationCenter from './notifications/NotificationCenter';
@@ -31,6 +33,7 @@ type SortField = 'date' | 'duration' | 'type';
 type SortDirection = 'asc' | 'desc';
 
 export default function SessionsPage({ studentId }: SessionsPageProps) {
+  const { user, isCounselor, isStudent } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [sessions, setSessions] = useState<CounselingSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [selectedType, setSelectedType] = useState<CounselingSession['type'] | ''>('');
+  const [selectedApprovalStatus, setSelectedApprovalStatus] = useState<'pending' | 'approved' | 'rejected' | ''>('');
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -60,6 +64,10 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [sessionToApprove, setSessionToApprove] = useState<CounselingSession | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('month');
@@ -68,17 +76,49 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
   const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getSessions();
-      const filteredSessions = studentId
-        ? response.data.filter((session) => session.studentId === studentId)
-        : response.data;
-      setSessions(filteredSessions);
+      
+      // Build filters based on user role
+      const filters: any = {};
+      
+      // Role-based filtering
+      if (isStudent && user?.userId) {
+        // Students see only their own sessions
+        filters.student = user.userId;
+      } else if (isCounselor && user?.userId) {
+        // Counselors see only their own sessions
+        filters.counselor = user.userId;
+      } else if (studentId) {
+        // For specific student view (admin or direct access)
+        filters.student = studentId;
+      }
+      // Admin/others see all sessions (no additional filters needed)
+      
+      if (selectedType) {
+        filters.type = selectedType;
+      }
+      if (selectedApprovalStatus) {
+        filters.approvalStatus = selectedApprovalStatus;
+      }
+      if (dateRange.start) {
+        filters.startDate = dateRange.start;
+      }
+      if (dateRange.end) {
+        filters.endDate = dateRange.end;
+      }
+      
+      const response = await getSessions(filters, 1, 1000); // Get a large page size for frontend filtering
+      
+      // The response now includes pagination info
+      const sessionsData = response.data || [];
+      setSessions(sessionsData);
+      
     } catch (err) {
       console.error('Error loading sessions:', err);
+      // Keep any existing sessions on error to prevent blank state
     } finally {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, selectedType, selectedApprovalStatus, dateRange, isStudent, isCounselor, user?.userId]);
 
   useEffect(() => {
     loadSessions();
@@ -104,11 +144,17 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
 
   const handleCreateSession = async (newSession: Omit<CounselingSession, 'id'>) => {
     try {
+      console.log('Creating new session:', newSession);
       const response = await createSession(newSession);
+      
+      // Add the new session to local state
       setSessions(prev => [...prev, response.data]);
       setShowCreateModal(false);
+      
+      console.log('Session created successfully:', response.data);
     } catch (error) {
       console.error('Error creating session:', error);
+      // Optionally show an error message to the user
     }
   };
 
@@ -176,6 +222,10 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       filteredSessions = filteredSessions.filter((session) => session.type === selectedType);
     }
 
+    if (selectedApprovalStatus) {
+      filteredSessions = filteredSessions.filter((session) => (session as any).approvalStatus === selectedApprovalStatus);
+    }
+
     filteredSessions = filteredSessions.filter((session) => {
       const sessionDate = parseISO(session.date);
       return (
@@ -196,7 +246,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       }
       return 0;
     });
-  }, [sessions, searchTerm, selectedType, dateRange, sortConfig]);
+  }, [sessions, searchTerm, selectedType, selectedApprovalStatus, dateRange, sortConfig]);
 
   const handleGenerateReport = useCallback(() => {
     generateSessionReport(filteredAndSortedSessions);
@@ -221,24 +271,83 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
     try {
       if (!selectedSession) return;
 
-      const completeUpdatedSession = {
-        ...updatedSession,
-        id: selectedSession.id
-      };
+      console.log('Updating session:', selectedSession.id, updatedSession);
 
-      console.log('Updating session:', completeUpdatedSession);
-
+      // Call the API to update the session
+      const response = await updateSession(selectedSession.id, updatedSession);
+      
+      // Update local state with the response data
       setSessions(prevSessions => 
         prevSessions.map(session => 
           session.id === selectedSession.id 
-            ? completeUpdatedSession 
+            ? response.data
             : session
         )
       );
 
       setShowEditModal(false);
+      setSelectedSession(null);
     } catch (error) {
       console.error('Error updating session:', error);
+      // Optionally show an error message to the user
+    }
+  };
+
+  const openApprovalModal = (session: CounselingSession) => {
+    setSessionToApprove(session);
+    setShowApprovalModal(true);
+  };
+
+  const openRejectionModal = (session: CounselingSession) => {
+    setSessionToApprove(session);
+    setRejectionReason('');
+    setShowRejectionModal(true);
+  };
+
+  const handleApproveSession = async () => {
+    if (!sessionToApprove || !user?.userId) return;
+    
+    try {
+      const response = await approveSession(sessionToApprove.id, user.userId);
+      
+      // Update local state with the approved session
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === sessionToApprove.id 
+            ? response.data
+            : session
+        )
+      );
+      
+      setShowApprovalModal(false);
+      setSessionToApprove(null);
+    } catch (error) {
+      console.error('Error approving session:', error);
+      // Optionally show an error message to the user
+    }
+  };
+
+  const handleRejectSession = async () => {
+    if (!sessionToApprove || !rejectionReason.trim() || !user?.userId) return;
+    
+    try {
+      const response = await rejectSession(sessionToApprove.id, user.userId, rejectionReason);
+      
+      // Update local state with the rejected session
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === sessionToApprove.id 
+            ? response.data
+            : session
+        )
+      );
+      
+      setShowRejectionModal(false);
+      setSessionToApprove(null);
+      setRejectionReason('');
+    } catch (error) {
+      console.error('Error rejecting session:', error);
+      // Optionally show an error message to the user
     }
   };
 
@@ -581,6 +690,22 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                     </select>
                   </div>
 
+                  {isCounselor && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
+                      <select
+                        value={selectedApprovalStatus}
+                        onChange={(e) => setSelectedApprovalStatus(e.target.value as 'pending' | 'approved' | 'rejected' | '')}
+                        className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
+                      >
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
                     <input
@@ -605,6 +730,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                     <button
                       onClick={() => {
                         setSelectedType('');
+                        setSelectedApprovalStatus('');
                         setDateRange({
                           start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
                           end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -659,11 +785,9 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
             Schedule Session
           </button>
         </div>
-      </div>
-
-      {viewMode === 'list' ? (
+      </div>        {viewMode === 'list' ? (
         <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-light">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
@@ -724,6 +848,11 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Outcome
                   </th>
+                  {isCounselor && (
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                  )}
                   <th scope="col" className="relative px-6 py-4">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -828,6 +957,45 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                         {session.outcome === 'positive' ? 'Positive' : session.outcome === 'neutral' ? 'Neutral' : 'Negative'}
                       </span>
                     </td>
+                    {isCounselor && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(!session.approvalStatus || (session as any).approvalStatus === 'pending') ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1 text-yellow-500" />
+                              Pending
+                            </span>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => openApprovalModal(session)}
+                                className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-50 transition-colors"
+                                title="Approve"
+                                aria-label="Approve session"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => openRejectionModal(session)}
+                                className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                title="Reject"
+                                aria-label="Reject session"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center w-fit ${
+                            (session as any).approvalStatus === 'approved' ? 'bg-green-100 text-green-800 border border-green-200' : 
+                            'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {(session as any).approvalStatus === 'approved' && <Check className="h-3.5 w-3.5 mr-1 text-green-500" />}
+                            {(session as any).approvalStatus === 'rejected' && <XCircle className="h-3.5 w-3.5 mr-1 text-red-500" />}
+                            {(session as any).approvalStatus === 'approved' ? 'Approved' : 'Rejected'}
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-1 justify-end">
                         <button
@@ -861,7 +1029,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
 
                 {filteredAndSortedSessions.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center">
+                    <td colSpan={isCounselor ? 8 : 7} className="px-6 py-10 text-center">
                       <div className="text-gray-500 flex flex-col items-center">
                         <div className="bg-gray-50 p-6 rounded-full mb-4 w-24 h-24 flex items-center justify-center border border-gray-100 shadow-inner">
                           <CalendarIcon className="h-12 w-12 text-gray-300" />
@@ -947,11 +1115,11 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
           </div>
           
           {calendarView === 'day' ? (
-            <div className="overflow-y-auto" style={{ height: '700px' }}>
+            <div className="overflow-y-auto scrollbar-light" style={{ height: '700px' }}>
               <div className="relative" style={{ height: '100%' }}>
                 {/* Time indicators column */}
                 <div className="absolute top-0 left-0 w-20 h-full border-r border-gray-200 bg-gray-50">
-                  {dayViewHours.map((hour, i) => (
+                  {dayViewHours.map((_, i) => (
                     <div key={i} className="h-[80px] relative border-b border-gray-200">
                       <div className="absolute top-0 right-0 transform -translate-y-1/2 pr-2 text-xs font-medium text-gray-500 bg-gray-50 px-2">
                         {format(setHours(currentDate, 7 + i), 'h a')}
@@ -1025,7 +1193,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
               </div>
             </div>
           ) : calendarView === 'week' ? (
-            <div className="overflow-auto">
+            <div className="overflow-auto scrollbar-light">
               <div className="grid grid-cols-7 text-center bg-gradient-to-b from-gray-50 to-white">
                 {calendarDaysToShow.map((day, i) => {
                   const isToday = isSameDay(day, new Date());
@@ -1191,7 +1359,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       {showCreateModal && (
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[100] transition-all duration-300 ease-in-out">
           <div 
-            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all"
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-light transform transition-all"
             style={{animation: 'modalFadeIn 0.3s ease-out'}}
           >
             <div className="relative">
@@ -1211,7 +1379,12 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
 
               {/* Modal body */}
               <div className="p-6">
-                <SessionForm onSubmit={handleCreateSession} onCancel={() => setShowCreateModal(false)} />
+                <SessionForm 
+                  onSubmit={handleCreateSession} 
+                  onCancel={() => setShowCreateModal(false)}
+                  userRole={user?.role}
+                  currentUserId={user?.userId}
+                />
               </div>
             </div>
           </div>
@@ -1222,7 +1395,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       {showEditModal && selectedSession && (
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[100] transition-all duration-300 ease-in-out">
           <div 
-            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all"
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-light transform transition-all"
             style={{animation: 'modalFadeIn 0.3s ease-out'}}
           >
             <div className="relative">
@@ -1245,6 +1418,8 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                   initialData={selectedSession}
                   onSubmit={handleUpdateSession}
                   onCancel={() => setShowEditModal(false)}
+                  userRole={user?.role}
+                  currentUserId={user?.userId}
                 />
               </div>
             </div>
@@ -1256,7 +1431,7 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       {showDetailsModal && selectedSession && (
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[100] transition-all duration-300 ease-in-out">
           <div 
-            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all"
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-light transform transition-all"
             style={{animation: 'modalFadeIn 0.3s ease-out'}}
           >
             <div className="relative">
@@ -1444,6 +1619,112 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
         </div>
       )}
 
+      {/* Approval Confirmation Modal */}
+      {showApprovalModal && sessionToApprove && (
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[100] transition-all duration-300 ease-in-out">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all"
+            style={{animation: 'modalFadeIn 0.3s ease-out'}}
+          >
+            <div className="relative">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <h3 className="text-lg font-medium text-white flex items-center">
+                  <Check className="h-5 w-5 mr-2" />
+                  Approve Session
+                </h3>
+                <button 
+                  onClick={() => setShowApprovalModal(false)} 
+                  className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Modal body */}
+              <div className="p-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Are you sure you want to approve this session? The student will be notified of the approval.
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowApprovalModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleApproveSession}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
+                  >
+                    Approve Session
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Confirmation Modal */}
+      {showRejectionModal && sessionToApprove && (
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[100] transition-all duration-300 ease-in-out">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all"
+            style={{animation: 'modalFadeIn 0.3s ease-out'}}
+          >
+            <div className="relative">
+              <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <h3 className="text-lg font-medium text-white flex items-center">
+                  <XCircle className="h-5 w-5 mr-2" />
+                  Reject Session
+                </h3>
+                <button 
+                  onClick={() => setShowRejectionModal(false)} 
+                  className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Modal body */}
+              <div className="p-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  Are you sure you want to reject this session? The student will be notified of the rejection.
+                </p>
+                <div className="mb-4">
+                  <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 mb-1">
+                    Rejection Reason *
+                  </label>
+                  <textarea
+                    id="rejectionReason"
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
+                    placeholder="Enter the reason for rejection..."
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowRejectionModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRejectSession}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                  >
+                    Reject Session
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add CSS animation for modals */}
       <style>
         {`
@@ -1466,9 +1747,11 @@ interface SessionFormProps {
   initialData?: Partial<CounselingSession>;
   onSubmit: (session: Omit<CounselingSession, 'id'>) => void;
   onCancel: () => void;
+  userRole?: 'admin' | 'counselor' | 'student' | 'staff';
+  currentUserId?: string;
 }
 
-function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
+function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', currentUserId }: SessionFormProps) {
   const initialDate = initialData?.date ? parseISO(initialData.date) : new Date();
 
   const initialTime = initialData?.date 
@@ -1479,22 +1762,180 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
     ? format(initialDate, 'yyyy-MM-dd')
     : format(new Date(), 'yyyy-MM-dd');
 
-  const [formData, setFormData] = useState<Omit<CounselingSession, 'id'>>({
-    studentId: initialData?.studentId || '',
-    date: initialData?.date || format(new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-    duration: initialData?.duration || 60,
-    notes: initialData?.notes || '',
-    type: initialData?.type || 'academic',
-    outcome: initialData?.outcome || 'neutral',
-    nextSteps: initialData?.nextSteps || '',
-    counselor: initialData?.counselor || {
-      id: '1',
-      name: 'Current User',
-    },
-  });
+  // Set initial form data based on user role
+  const getInitialFormData = () => {
+    const baseData = {
+      studentId: initialData?.studentId || '',
+      date: initialData?.date || format(new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+      duration: initialData?.duration || 60,
+      notes: initialData?.notes || '',
+      type: initialData?.type || 'academic',
+      outcome: initialData?.outcome || 'neutral',
+      nextSteps: initialData?.nextSteps || '',
+      followUp: initialData?.followUp || '',
+      approvalStatus: initialData?.approvalStatus || 'pending',
+      approvedBy: initialData?.approvedBy,
+      approvedAt: initialData?.approvedAt,
+      rejectionReason: initialData?.rejectionReason,
+      counselor: initialData?.counselor || {
+        id: 'KSL-2025-001', // Default to the first counselor we know exists
+        name: 'Dr. Sarah Johnson',
+      },
+    };
+
+    // Set defaults based on user role
+    if (userRole === 'student' && currentUserId) {
+      baseData.studentId = currentUserId;
+    } else if (userRole === 'counselor' && currentUserId) {
+      baseData.counselor = {
+        id: currentUserId,
+        name: 'Current User', // Will be updated when counselors load
+      };
+    }
+
+    return baseData;
+  };
+
+  const [formData, setFormData] = useState<Omit<CounselingSession, 'id'>>(getInitialFormData());
 
   const [dateDisplay, setDateDisplay] = useState(initialDateString);
   const [timeValue, setTimeValue] = useState(initialTime);
+
+  // State for students data
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  // State for counselors data
+  const [counselors, setCounselors] = useState<Counselor[]>([]);
+  const [loadingCounselors, setLoadingCounselors] = useState(true);
+  const [counselorsError, setCounselorsError] = useState<string | null>(null);
+
+  // State for schedule conflict validation
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const [validatingConflict, setValidatingConflict] = useState(false);
+
+  // Function to check for schedule conflicts
+  const checkScheduleConflict = useCallback(async (sessionData: Omit<CounselingSession, 'id'>) => {
+    try {
+      setValidatingConflict(true);
+      setConflictError(null);
+
+      const sessionStart = parseISO(sessionData.date);
+      const sessionEnd = addDays(sessionStart, 0);
+      sessionEnd.setMinutes(sessionStart.getMinutes() + sessionData.duration);
+
+      // Get existing sessions for the same date
+      const filters = {
+        startDate: format(sessionStart, 'yyyy-MM-dd'),
+        endDate: format(sessionStart, 'yyyy-MM-dd'),
+      };
+
+      const response = await getSessions(filters, 1, 1000);
+      const existingSessions = response.data || [];
+
+      // Check for conflicts based on user role
+      for (const session of existingSessions) {
+        const existingStart = parseISO(session.date);
+        const existingEnd = addDays(existingStart, 0);
+        existingEnd.setMinutes(existingStart.getMinutes() + session.duration);
+
+        // Check if sessions overlap
+        const isOverlapping = (sessionStart < existingEnd && sessionEnd > existingStart);
+        
+        if (isOverlapping) {
+          // Check for student conflicts (for counselors and others)
+          if ((userRole === 'counselor' || userRole === 'admin' || userRole === 'staff') && 
+              session.studentId === sessionData.studentId) {
+            setConflictError(`Student already has a session at ${format(existingStart, 'h:mm a')}`);
+            return false;
+          }
+
+          // Check for counselor conflicts (for students and others)
+          if ((userRole === 'student' || userRole === 'admin' || userRole === 'staff') && 
+              session.counselor?.id === sessionData.counselor?.id) {
+            setConflictError(`Counselor ${session.counselor?.name} is not available at ${format(existingStart, 'h:mm a')}`);
+            return false;
+          }
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking schedule conflicts:', error);
+      // Don't block submission on validation error
+      return true;
+    } finally {
+      setValidatingConflict(false);
+    }
+  }, [userRole]);
+
+  // Load students data
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        setLoadingStudents(true);
+        setStudentsError(null);
+        
+        // Get all students without filters, with a high limit to get all records
+        const response = await getStudents({}, 1, 1000);
+        // Filter and convert students to ensure they have required fields
+        const validStudents = (response.data || [])
+          .filter(student => student.studentId || student.id)
+          .map(student => ({
+            ...student,
+            studentId: student.studentId || student.id!,
+            id: student.id || student.studentId
+          }));
+        setStudents(validStudents);
+      } catch (error) {
+        console.error('Error loading students:', error);
+        setStudentsError('Failed to load students');
+        // Fallback to empty array
+        setStudents([]);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+
+    loadStudents();
+  }, []);
+
+  // Load counselors data
+  useEffect(() => {
+    const loadCounselors = async () => {
+      try {
+        setLoadingCounselors(true);
+        setCounselorsError(null);
+        
+        const response = await getCounselors();
+        setCounselors(response.data || []);
+      } catch (error) {
+        console.error('Error loading counselors:', error);
+        setCounselorsError('Failed to load counselors');
+        // Fallback to empty array
+        setCounselors([]);
+      } finally {
+        setLoadingCounselors(false);
+      }
+    };
+
+    loadCounselors();
+  }, []);
+
+  // Update form with first available counselor if none selected
+  useEffect(() => {
+    if (!loadingCounselors && counselors.length > 0 && (!formData.counselor || !formData.counselor.id)) {
+      const firstCounselor = counselors[0];
+      setFormData(prev => ({
+        ...prev,
+        counselor: {
+          id: firstCounselor.id,
+          name: firstCounselor.name,
+        }
+      }));
+    }
+  }, [loadingCounselors, counselors, formData.counselor?.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -1510,6 +1951,11 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
         ...prev,
         [name]: value,
       }));
+    }
+
+    // Clear conflict error when relevant fields change
+    if (['date', 'time', 'duration', 'studentId'].includes(name)) {
+      setConflictError(null);
     }
   };
 
@@ -1530,6 +1976,9 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
         ...prev,
         date: isoString
       }));
+
+      // Clear conflict error when date/time changes
+      setConflictError(null);
     } catch (err) {
       console.error("Error updating date/time:", err);
     }
@@ -1541,58 +1990,125 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
       ...prev,
       duration: numValue
     }));
+    
+    // Clear conflict error when duration changes
+    setConflictError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate schedule conflicts before submission
+    const isValidSchedule = await checkScheduleConflict(formData);
+    if (!isValidSchedule) {
+      return; // Don't submit if there's a conflict
+    }
+    
     onSubmit(formData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-1">
-            Student *
-          </label>
-          <div className="relative">
-            <select
-              id="studentId"
-              name="studentId"
-              value={formData.studentId}
-              onChange={handleInputChange}
-              required
-              className="appearance-none w-full bg-white rounded-md border border-gray-300 shadow-sm py-2.5 px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-            >
-              <option value="">Select a student</option>
-              <option value="1">Alice Johnson</option>
-              <option value="2">Bob Smith</option>
-              <option value="3">Carol Williams</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-              <ChevronDown className="h-5 w-5" />
+      {/* Conflict validation error */}
+      {conflictError && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <X className="h-5 w-5 text-red-400" />
             </div>
-            {!formData.studentId && (
-              <div className="absolute left-3 top-2.5 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400 mr-2" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Schedule Conflict
+              </h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{conflictError}</p>
               </div>
-            )}
+            </div>
           </div>
         </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Student Selection - Hidden for students, shown for counselors and others */}
+        {userRole !== 'student' ? (
+          <div>
+            <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-1">
+              Student *
+              {loadingStudents && (
+                <span className="ml-2 text-xs text-gray-500">
+                  Loading...
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-2.5 flex items-center pointer-events-none z-10">
+                <User className="h-4 w-4 text-gray-400" />
+              </div>
+              <select
+                id="studentId"
+                name="studentId"
+                value={formData.studentId}
+                onChange={handleInputChange}
+                required
+                disabled={loadingStudents}
+                className="appearance-none w-full bg-white rounded-md border border-gray-300 shadow-sm py-2.5 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {loadingStudents ? 'Loading students...' : 'Select a student'}
+                </option>
+                {!loadingStudents && students.map((student) => (
+                  <option key={student.studentId || student.id} value={student.studentId || student.id}>
+                    {student.name} - {student.tingkat || student.grade} {student.kelas || student.class}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <ChevronDown className="h-5 w-5" />
+              </div>
+            </div>
+            {studentsError && (
+              <p className="mt-1 text-xs text-red-600">
+                {studentsError}. Using backup functionality.
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Student Display Field - Read-only for students */
+          <div>
+            <label htmlFor="studentDisplay" className="block text-sm font-medium text-gray-700 mb-1">
+              Student *
+            </label>
+            <div className="relative">
+              <div className="w-full bg-gray-50 rounded-md border border-gray-300 shadow-sm py-2.5 px-4 flex items-center">
+                <User className="h-4 w-4 text-gray-500 mr-3" />
+                <span className="text-gray-900 font-medium">Current Student (You)</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div>
           <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
             Session Type *
           </label>
           <div className="relative">
+            <div className="absolute left-3 top-2.5 flex items-center pointer-events-none z-10">
+              {formData.type === 'academic' && <BookOpen className="h-4 w-4 text-blue-500" />}
+              {formData.type === 'behavioral' && <Activity className="h-4 w-4 text-yellow-500" />}
+              {formData.type === 'mental-health' && <Brain className="h-4 w-4 text-purple-500" />}
+              {formData.type === 'career' && <Briefcase className="h-4 w-4 text-green-500" />}
+              {formData.type === 'social' && <Users className="h-4 w-4 text-pink-500" />}
+              {!formData.type && <FileText className="h-4 w-4 text-gray-400" />}
+            </div>
             <select
               id="type"
               name="type"
               value={formData.type}
               onChange={handleInputChange}
               required
-              className="appearance-none w-full bg-white rounded-md border border-gray-300 shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              className="appearance-none w-full bg-white rounded-md border border-gray-300 shadow-sm py-2.5 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             >
+              <option value="">Select session type</option>
               <option value="academic">Academic</option>
               <option value="behavioral">Behavioral</option>
               <option value="mental-health">Mental Health</option>
@@ -1602,15 +2118,79 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
               <ChevronDown className="h-5 w-5" />
             </div>
-            <div className="absolute left-3 top-2.5 flex items-center pointer-events-none">
-              {formData.type === 'academic' && <BookOpen className="h-4 w-4 text-blue-500 mr-2" />}
-              {formData.type === 'behavioral' && <Activity className="h-4 w-4 text-yellow-500 mr-2" />}
-              {formData.type === 'mental-health' && <Brain className="h-4 w-4 text-purple-500 mr-2" />}
-              {formData.type === 'career' && <Briefcase className="h-4 w-4 text-green-500 mr-2" />}
-              {formData.type === 'social' && <Users className="h-4 w-4 text-pink-500 mr-2" />}
-            </div>
           </div>
         </div>
+
+        {/* Counselor Selection - Hidden for counselors, shown for students and others */}
+        {userRole !== 'counselor' ? (
+          <div>
+            <label htmlFor="counselorId" className="block text-sm font-medium text-gray-700 mb-1">
+              Counselor *
+              {loadingCounselors && (
+                <span className="ml-2 text-xs text-gray-500">
+                  Loading...
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-2.5 flex items-center pointer-events-none z-10">
+                <User className="h-4 w-4 text-brand-500" />
+              </div>
+              <select
+                id="counselorId"
+                name="counselorId"
+                value={formData.counselor?.id || ''}
+                onChange={(e) => {
+                  const selectedCounselor = counselors.find(c => c.id === e.target.value);
+                  setFormData(prev => ({
+                    ...prev,
+                    counselor: {
+                      id: e.target.value,
+                      name: selectedCounselor?.name || 'Unknown',
+                    }
+                  }));
+                  // Clear conflict error when counselor changes
+                  setConflictError(null);
+                }}
+                required
+                disabled={loadingCounselors}
+                className="appearance-none w-full bg-white rounded-md border border-gray-300 shadow-sm py-2.5 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {loadingCounselors ? 'Loading counselors...' : 'Select a counselor'}
+                </option>
+                {!loadingCounselors && counselors.map((counselor) => (
+                  <option key={counselor.id} value={counselor.id}>
+                    {counselor.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <ChevronDown className="h-5 w-5" />
+              </div>
+            </div>
+            {counselorsError && (
+              <p className="mt-1 text-xs text-red-600">
+                {counselorsError}. Using default counselor.
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Counselor Display Field - Read-only for counselors */
+          <div>
+            <label htmlFor="counselorDisplay" className="block text-sm font-medium text-gray-700 mb-1">
+              Counselor *
+            </label>
+            <div className="relative">
+              <div className="w-full bg-gray-50 rounded-md border border-gray-300 shadow-sm py-2.5 px-4 flex items-center">
+                <User className="h-4 w-4 text-brand-500 mr-3" />
+                <span className="text-gray-900 font-medium">
+                  {formData.counselor?.name || 'Current Counselor (You)'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1665,22 +2245,25 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
           />
         </div>
 
-        <div>
-          <label htmlFor="outcome" className="block text-sm font-medium text-gray-700 mb-1">
-            Outcome
-          </label>
-          <select
-            id="outcome"
-            name="outcome"
-            value={formData.outcome}
-            onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
-          >
-            <option value="positive">Positive</option>
-            <option value="neutral">Neutral</option>
-            <option value="negative">Negative</option>
-          </select>
-        </div>
+        {/* Outcome - Only shown for counselors */}
+        {userRole === 'counselor' && (
+          <div>
+            <label htmlFor="outcome" className="block text-sm font-medium text-gray-700 mb-1">
+              Outcome
+            </label>
+            <select
+              id="outcome"
+              name="outcome"
+              value={formData.outcome}
+              onChange={handleInputChange}
+              className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
+            >
+              <option value="positive">Positive</option>
+              <option value="neutral">Neutral</option>
+              <option value="negative">Negative</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <div>
@@ -1699,20 +2282,23 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
         />
       </div>
 
-      <div>
-        <label htmlFor="nextSteps" className="block text-sm font-medium text-gray-700 mb-1">
-          Next Steps
-        </label>
-        <textarea
-          id="nextSteps"
-          name="nextSteps"
-          value={formData.nextSteps}
-          onChange={handleInputChange}
-          rows={2}
-          className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
-          placeholder="Enter next steps here..."
-        />
-      </div>
+      {/* Next Steps - Only shown for counselors */}
+      {userRole === 'counselor' && (
+        <div>
+          <label htmlFor="nextSteps" className="block text-sm font-medium text-gray-700 mb-1">
+            Next Steps
+          </label>
+          <textarea
+            id="nextSteps"
+            name="nextSteps"
+            value={formData.nextSteps}
+            onChange={handleInputChange}
+            rows={2}
+            className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
+            placeholder="Enter next steps here..."
+          />
+        </div>
+      )}
 
       <div className="flex justify-end space-x-3 pt-4">
         <button
@@ -1724,9 +2310,10 @@ function SessionForm({ initialData, onSubmit, onCancel }: SessionFormProps) {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700"
+          disabled={validatingConflict}
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save
+          {validatingConflict ? 'Checking availability...' : 'Save'}
         </button>
       </div>
     </form>

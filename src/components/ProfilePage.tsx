@@ -6,10 +6,12 @@ import { cn } from '../utils/cn';
 import { Student, CounselingSession, User } from '../types';
 import { format } from 'date-fns';
 import ProfileEditor from './ProfileEditor';
+import { getUserStatistics } from '../services/userService';
 
 // Mock data for the student section
 const mockStudent: Student = {
   id: '1',
+  studentId: 'S12345', // Added NIS
   name: 'Student User',
   email: 'student@example.com',
   tingkat: 'XI',
@@ -66,21 +68,58 @@ export default function ProfilePage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<CounselingSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'reports'>('overview');  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    totalCounselors: 0,
+    totalStudents: 0,
+    totalAdmins: 0
+  });  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  // Function to fetch user statistics
+  const fetchUserStatistics = async () => {
+    if (!isAdmin) return;
+    
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const stats = await getUserStatistics();
+      setUserStats(stats);
+    } catch (error) {
+      console.error('Error fetching user statistics:', error);
+      setStatsError('Failed to load user statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Only fetch student data if the user is a student
-    if (isStudent && user) {
-      // In a real app, this would fetch the student data based on the user ID
-      setStudent({
-        ...mockStudent,
-        name: user.name || mockStudent.name,
-        email: user.email || mockStudent.email
-      });
-      setSessions(mockSessions);
-    }
-    setLoading(false);
-  }, [user, isStudent]);
+    const fetchData = async () => {
+      setLoading(true);      try {
+        // Fetch user statistics if user is admin
+        if (isAdmin) {
+          await fetchUserStatistics();
+        }
+
+        // Only fetch student data if the user is a student
+        if (isStudent && user) {
+          // In a real app, this would fetch the student data based on the user ID
+          setStudent({
+            ...mockStudent,
+            name: user.name || mockStudent.name,
+            email: user.email || mockStudent.email
+          });
+          setSessions(mockSessions);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, isStudent, isAdmin]);
 
   const handleUpdateProfile = async (updatedUserData: Partial<User>) => {
     try {
@@ -197,10 +236,9 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-
   const ProfileTabs = () => (
-    <div className="bg-white border-t border-gray-100 px-6 py-3 flex space-x-8 overflow-x-auto mb-8 rounded-b-2xl shadow-lg">
-      <button 
+    <div className="bg-white border-t border-gray-100 px-6 py-3 flex space-x-8 overflow-x-auto scrollbar-light mb-8 rounded-b-2xl shadow-lg">
+      <button
         type="button"
         onClick={() => setActiveTab('overview')}
         className={cn(
@@ -333,62 +371,209 @@ export default function ProfilePage() {
           <ProfileTabs />
           
           {activeTab === 'overview' && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-indigo-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
-                  <div className="flex items-center">
-                    <div className="rounded-full bg-indigo-100 p-3 mr-4">
-                      <Users className="h-8 w-8 text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">{t('profile.totalUsers')}</p>
-                      <div className="flex items-end">
-                        <h3 className="text-3xl font-bold text-gray-900">45</h3>
-                        <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">+12%</span>
+            <>              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">                {statsLoading ? (
+                  // Loading skeleton for statistics cards
+                  <>
+                    <div className="bg-gradient-to-br from-indigo-50 to-white shadow-md rounded-xl p-6">
+                      <div className="animate-pulse">
+                        <div className="flex items-center">
+                          <div className="rounded-full bg-gray-200 p-3 mr-4">
+                            <div className="h-8 w-8 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+                            <div className="flex items-end">
+                              <div className="h-8 bg-gray-300 rounded w-16"></div>
+                              <div className="ml-2 h-5 bg-gray-200 rounded w-12"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 h-2 bg-gray-200 rounded-full"></div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full" style={{width: '65%'}}></div>
-                  </div>
-                </div>
+                    <div className="bg-gradient-to-br from-green-50 to-white shadow-md rounded-xl p-6">
+                      <div className="animate-pulse">
+                        <div className="flex items-center">
+                          <div className="rounded-full bg-gray-200 p-3 mr-4">
+                            <div className="h-8 w-8 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+                            <div className="flex items-end">
+                              <div className="h-8 bg-gray-300 rounded w-16"></div>
+                              <div className="ml-2 h-5 bg-gray-200 rounded w-12"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 h-2 bg-gray-200 rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-white shadow-md rounded-xl p-6">
+                      <div className="animate-pulse">
+                        <div className="flex items-center">
+                          <div className="rounded-full bg-gray-200 p-3 mr-4">
+                            <div className="h-8 w-8 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+                            <div className="flex items-end">
+                              <div className="h-8 bg-gray-300 rounded w-16"></div>
+                              <div className="ml-2 h-5 bg-gray-200 rounded w-12"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 h-2 bg-gray-200 rounded-full"></div>
+                      </div>
+                    </div>
+                  </>
+                ) : statsError ? (
+                  // Error state for statistics cards
+                  <>
+                    <div className="bg-red-50 border border-red-200 shadow-md rounded-xl p-6">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-red-100 p-3 mr-4">
+                          <Users className="h-8 w-8 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.totalUsers')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-lg font-medium text-red-700">Error</h3>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 shadow-md rounded-xl p-6">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-red-100 p-3 mr-4">
+                          <Briefcase className="h-8 w-8 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.counselors')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-lg font-medium text-red-700">Error</h3>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 shadow-md rounded-xl p-6">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-red-100 p-3 mr-4">
+                          <BookOpen className="h-8 w-8 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.students')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-lg font-medium text-red-700">Error</h3>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // Normal statistics cards with data
+                  <>
+                    <div className="bg-gradient-to-br from-indigo-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-indigo-100 p-3 mr-4">
+                          <Users className="h-8 w-8 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.totalUsers')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-3xl font-bold text-gray-900">{userStats.totalUsers}</h3>
+                            <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Active</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-500 rounded-full" style={{width: '65%'}}></div>
+                      </div>
+                    </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
-                  <div className="flex items-center">
-                    <div className="rounded-full bg-green-100 p-3 mr-4">
-                      <Briefcase className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">{t('profile.counselors')}</p>
-                      <div className="flex items-end">
-                        <h3 className="text-3xl font-bold text-gray-900">15</h3>
-                        <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">+5%</span>
+                    <div className="bg-gradient-to-br from-green-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-green-100 p-3 mr-4">
+                          <Briefcase className="h-8 w-8 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.counselors')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-3xl font-bold text-gray-900">{userStats.totalCounselors}</h3>
+                            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Active</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full" style={{width: '40%'}}></div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{width: '40%'}}></div>
-                  </div>
-                </div>
 
-                <div className="bg-gradient-to-br from-blue-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
-                  <div className="flex items-center">
-                    <div className="rounded-full bg-blue-100 p-3 mr-4">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">{t('profile.students')}</p>
-                      <div className="flex items-end">
-                        <h3 className="text-3xl font-bold text-gray-900">30</h3>
-                        <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">+8%</span>
+                    <div className="bg-gradient-to-br from-blue-50 to-white shadow-md rounded-xl p-6 transform transition-all hover:scale-105 hover:shadow-lg">
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-blue-100 p-3 mr-4">
+                          <BookOpen className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-sm">{t('profile.students')}</p>
+                          <div className="flex items-end">
+                            <h3 className="text-3xl font-bold text-gray-900">{userStats.totalStudents}</h3>
+                            <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">Enrolled</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{width: '75%'}}></div>
-                  </div>
-                </div>
+                      <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{width: '75%'}}></div>
+                      </div>                    </div>
+                  </>
+                )}
               </div>
+                {/* Error message for statistics loading */}
+              {statsError && (
+                <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <div className="w-5 h-5 text-red-400">
+                        ⚠️
+                      </div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-medium text-red-800">
+                        {t('profile.statisticsError', 'Unable to load user statistics')}
+                      </h3>
+                      <p className="mt-1 text-sm text-red-700">
+                        {statsError}. {t('profile.statisticsErrorHelp', 'Please refresh the page or contact support if the issue persists.')}
+                      </p>
+                      <div className="mt-3">
+                        <button
+                          onClick={fetchUserStatistics}
+                          disabled={statsLoading}
+                          className={cn(
+                            "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors",
+                            statsLoading && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          {statsLoading ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-red-700" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              {t('profile.retrying', 'Retrying...')}
+                            </>
+                          ) : (
+                            <>
+                              <svg className="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              {t('profile.retry', 'Retry')}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="bg-white shadow-md rounded-xl overflow-hidden mb-8">
                 <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">

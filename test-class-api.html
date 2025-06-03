@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Class Students API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .student-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Test Class Students API</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing API...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/classes/1/students');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let html = `<h2 class="success">✅ API Success</h2>`;
+                    html += `<p><strong>Total Students:</strong> ${data.count}</p>`;
+                    
+                    if (data.students && data.students.length > 0) {
+                        html += `<h3>Student Details:</h3>`;
+                        
+                        data.students.forEach((student, index) => {
+                            html += `<div class="student-card">`;
+                            html += `<h4>Student ${index + 1}</h4>`;
+                            html += `<p><strong>Name:</strong> ${student.name || 'No name'}</p>`;
+                            html += `<p><strong>Email:</strong> ${student.email || 'No email'}</p>`;
+                            html += `<p><strong>Grade:</strong> ${student.tingkat}${student.kelas}</p>`;
+                            html += `<p><strong>Photo/Avatar:</strong> ${student.photo || student.avatar || 'No photo'}</p>`;
+                            html += `<p><strong>User ID:</strong> ${student.userId || 'No User ID'}</p>`;
+                            html += `<p><strong>Academic Status:</strong> ${student.academicStatus}</p>`;
+                            html += `</div>`;
+                        });
+                        
+                        // Check if data is from users table
+                        const studentsWithUserData = data.students.filter(s => s.name && s.email && s.userId);
+                        const percentage = Math.round((studentsWithUserData.length / data.count) * 100);
+                        
+                        html += `<div style="background-color: ${percentage === 100 ? '#d4edda' : '#fff3cd'}; padding: 10px; margin: 10px 0; border-radius: 5px;">`;
+                        html += `<h3>Data Quality Check</h3>`;
+                        html += `<p>Students with complete user data: ${studentsWithUserData.length}/${data.count} (${percentage}%)</p>`;
+                        
+                        if (percentage === 100) {
+                            html += `<p class="success">🎉 SUCCESS: All students have names and photos from users table!</p>`;
+                        } else {
+                            html += `<p class="error">⚠️ WARNING: Some students are missing user data</p>`;
+                        }
+                        html += `</div>`;
+                        
+                    } else {
+                        html += `<p>No students found in this class.</p>`;
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<p class="error">❌ API Error: ${data.error || 'Unknown error'}</p>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Request failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

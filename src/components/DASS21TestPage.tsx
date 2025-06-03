@@ -124,7 +124,7 @@ export default function DASS21TestPage() {
   };
 
   // Submit assessment
-  const submitAssessment = () => {
+  const submitAssessment = async () => {
     setIsSubmitting(true);
     
     // Calculate scores
@@ -253,15 +253,28 @@ Follow-up recommendation: ${overallRisk === 'high' ? '1-2 weeks' : overallRisk =
       severityColors
     };
     
-    // Save results data for display
-    setResultsData(assessment);
+    console.log('DASS-21 Test completed, saving assessment:', assessment);
     
-    // Add assessment to context
-    addAssessment(assessment);
-    
-    // Show results
-    setShowResults(true);
-    setIsSubmitting(false);
+    try {
+      // Save results data for display
+      setResultsData(assessment);
+      
+      // Add assessment to context (which will save to database)
+      await addAssessment(assessment);
+      
+      console.log('DASS-21 Assessment saved successfully to database');
+      
+      // Show results
+      setShowResults(true);
+      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Error saving DASS-21 assessment:', error);
+      
+      // Still show results even if save failed
+      setResultsData(assessment);
+      setShowResults(true);
+      setIsSubmitting(false);
+    }
   };
 
   // Reset assessment
@@ -276,7 +289,7 @@ Follow-up recommendation: ${overallRisk === 'high' ? '1-2 weeks' : overallRisk =
 
   // Go back to main mental health page
   const navigateBack = () => {
-    navigate('/mental-health');
+    navigate('/app/mental-health');
   };
 
 

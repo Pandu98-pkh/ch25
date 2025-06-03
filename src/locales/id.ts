@@ -1,5 +1,39 @@
 export default {
   // ...existing translations...
+  navigation: {
+    profile: 'Profil',
+    settings: 'Pengaturan',
+    userManual: 'Panduan Pengguna',
+  },  nav: {
+    userManual: 'Panduan Pengguna',
+    flowchart: 'Alur Kerja',
+  },
+  profile: {
+    title: 'Profil',
+    subtitle: 'Kelola informasi pribadi dan preferensi Anda',
+    information: 'Informasi Pribadi',
+    photo: 'Foto Profil',
+    changePhoto: 'Ubah Foto',
+    removePhoto: 'Hapus Foto',
+    updatedSuccess: 'Profil berhasil diperbarui',
+    updateFailed: 'Gagal memperbarui profil',
+    notLoggedIn: 'Anda perlu masuk untuk melihat profil Anda',
+    totalUsers: 'Total Pengguna',
+    counselors: 'Konselor',
+    students: 'Siswa',
+    overview: 'Ringkasan',
+    activity: 'Aktivitas',
+    reports: 'Laporan',    recentActivity: 'Aktivitas Terbaru',
+    viewAllActivity: 'Lihat Semua Aktivitas',
+    edit: 'Edit',
+    cancel: 'Batal',
+    adminDetails: 'Detail Admin',    systemAccess: 'Akses Sistem',
+    lastLogin: 'Login Terakhir',
+    statisticsError: 'Tidak dapat memuat statistik pengguna',
+    statisticsErrorHelp: 'Silakan refresh halaman atau hubungi dukungan jika masalah terus berlanjut.',
+    retry: 'Coba Lagi',
+    retrying: 'Mencoba lagi...'
+  },
   login: {
     platformDescription: "Platform komprehensif untuk konselor, siswa, dan administrator untuk mengelola dukungan kesehatan mental.",
     students: "Siswa",
@@ -130,9 +164,46 @@ export default {
       pdf: "Dokumen PDF",
       video: "Video",
       article: "Artikel",
-      document: "Dokumen",
-      presentation: "Presentasi"
+      document: "Dokumen",      presentation: "Presentasi"
     }
+  },  roles: {
+    admin: "Administrator",
+    counselor: "Konselor",
+    student: "Siswa", 
+    staff: "Staf"
+  },
+  userManual: {
+    title: "Panduan Pengguna",
+    subtitle: "Panduan lengkap untuk menggunakan Sistem Dukungan Konselor Sekolah",
+    searchPlaceholder: "Cari dalam panduan...",
+    gettingStarted: "Memulai",
+    basicNavigation: "Navigasi Dasar",
+    features: "Fitur",
+    troubleshooting: "Pemecahan Masalah",
+    contact: "Hubungi Dukungan",
+    additionalResources: "Sumber Daya Tambahan",
+    administration: "Administrasi Sistem",
+    counseling: "Alat Konseling",
+    studentSupport: "Dukungan Siswa",
+    dashboard: "Dashboard",
+    reporting: "Pelaporan",
+    userManagement: "Manajemen Pengguna",
+    sessionManagement: "Manajemen Sesi",
+    assessments: "Penilaian",
+    careerGuidance: "Bimbingan Karir",
+    profile: "Manajemen Profil",
+    appointments: "Janji Temu",
+    resources: "Sumber Daya",
+    support: "Mendapatkan Dukungan",
+    commonIssues: "Masalah Umum",
+    faq: "FAQ",
+    videoTutorials: "Tutorial Video",
+    documentation: "Dokumentasi",
+    helpDesk: "Help Desk",
+    welcomeMessage: "Selamat datang di panduan pengguna Sistem Dukungan Konselor Sekolah. Panduan komprehensif ini akan membantu Anda menavigasi dan memanfaatkan platform kami secara maksimal.",
+    adminWelcome: "Sebagai administrator, Anda memiliki akses ke alat-alat yang kuat untuk mengelola pengguna, memantau kesehatan sistem, dan menghasilkan laporan komprehensif.",
+    counselorWelcome: "Sebagai konselor, Anda dapat mengelola sesi siswa, melacak kemajuan, dan mengakses berbagai alat penilaian untuk mendukung siswa Anda secara efektif.",
+    studentWelcome: "Sebagai siswa, Anda dapat menjadwalkan janji temu, mengakses sumber daya bimbingan karir, dan melacak perjalanan pengembangan pribadi Anda.",
   }
   // ...existing translations...
 };

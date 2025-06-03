@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
+import { updateUser } from '../services/userService';
 
 interface UserContextType {
   user: User | null;
@@ -52,16 +53,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } else {
       localStorage.removeItem('user');
     }
-  }, [user]);
-
-  const updateCurrentUser = async (updatedInfo: Partial<User>) => {
-    if (user) {
-      // In a real app, you would make an API call here
-      // For this example, we'll just update the local state
-      const updatedUser = { ...user, ...updatedInfo };
-      setUser(updatedUser);
-      // Simulate async operation
-      return Promise.resolve();
+  }, [user]);  const updateCurrentUser = async (updatedInfo: Partial<User>) => {
+    if (user && user.userId) {
+      try {
+        // Make actual API call to update user in database
+        const updatedUserData = { ...user, ...updatedInfo };
+        const updatedUser = await updateUser(user.userId, updatedUserData);
+        
+        // Update local state with the response from backend
+        setUser(updatedUser);
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Error updating user in database:', error);
+        throw error;
+      }
     }
   };
 

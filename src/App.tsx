@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './components/Login';
+import LandingPage from './components/LandingPage';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { PHQ9MachineLearningProvider } from './components/PHQ9MachineLearningProvider';
@@ -24,7 +25,11 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
 const DASS21TestPage = lazy(() => import('./components/DASS21TestPage'));
 const UserManagementPage = lazy(() => import('./components/UserManagementPage'));
+const DeletedStudentsManagement = lazy(() => import('./components/DeletedStudentsManagement'));
+const DeletedClassesManagement = lazy(() => import('./components/DeletedClassesManagement'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
+const UserManualPage = lazy(() => import('./components/UserManualPage'));
+const FlowchartPage = lazy(() => import('./components/FlowchartPage'));
 
 // Component to require authentication
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -43,16 +48,10 @@ function RequireAdminAuth({ children }: { children: JSX.Element }) {
   const { isAdmin } = useUser();
 
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return children;
-}
-
-// Component to redirect based on user role
-function RoleBasedRedirect() {
-  // Always redirect to dashboard (root path)
-  return <Navigate to="/" replace />;
 }
 
 // Temporary StudentReports component until import issue is resolved
@@ -79,26 +78,43 @@ function App() {
               <Router>
                 <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
                   <Routes>
-                    {/* Redirect from root to login */}
+                    {/* Landing page as the main entry point */}
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
+                    {/* Authenticated routes under /app */}
                     <Route
-                      path="/"
+                      path="/app"
                       element={
                         <RequireAuth>
                           <Layout />
                         </RequireAuth>
                       }
                     >
-                      <Route index element={<Dashboard />} /> {/* Default route goes to Dashboard */}
+                      <Route index element={<Dashboard />} />
                       <Route path="classes" element={<ClassesPage />} />
+                      <Route 
+                        path="classes/deleted" 
+                        element={
+                          <RequireAdminAuth>
+                            <DeletedClassesManagement />
+                          </RequireAdminAuth>
+                        } 
+                      />
                       <Route path="classes/:id/students" element={<ClassDetail />} />
                       <Route path="students" element={<StudentsPage />} />
+                      <Route 
+                        path="students/deleted" 
+                        element={
+                          <RequireAdminAuth>
+                            <DeletedStudentsManagement />
+                          </RequireAdminAuth>
+                        } 
+                      />
                       <Route path="students/:id" element={<StudentDetail />} />
                       <Route path="sessions" element={<SessionsPage />} />
                       <Route path="sessions/student/:id" element={<SessionsPage />} />
                       <Route path="mental-health" element={<MentalHealthPage />} />
                       <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
-                      {/* Integrate PHQ9 test within the layout */}
                       <Route path="mental-health/phq9-test" element={<PHQ9TestPage />} />
                       <Route path="mental-health/gad7-test" element={<GAD7TestPage />} />
                       <Route path="mental-health/dass21-test" element={<DASS21TestPage />} />
@@ -118,8 +134,8 @@ function App() {
                       />
                       <Route path="profile" element={<ProfilePage />} />
                       <Route path="reports" element={<StudentReportsTemp />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="*" element={<RoleBasedRedirect />} />
+                      <Route path="user-manual" element={<UserManualPage />} />
+                      <Route path="flowchart" element={<FlowchartPage />} />
                     </Route>
                   </Routes>
                 </Suspense>

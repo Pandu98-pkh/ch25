@@ -10,7 +10,38 @@ type Translations = {
 // Sample translations with RIASEC assessment translations
 const translations: Translations = {
   id: {
+    // Dashboard
+    'dashboard.totalStudents': 'Total Siswa',
+    'dashboard.viewAll' : 'Lihat Semua',
+    'dashboard.totalClasses'  : 'Total Kelas',
+    'dashboard.upcomingSessions': 'Sesi Mendatang',
+    'dashboard.studentsAtRisk'  : 'Siswa Berisiko',
+    'dashboard.trendsAndInsights' : 'Tren dan Wawasan',
+    'dashboard.viewAdminInsights' : 'Lihat Wawasan Admin',
+    'dashboard.recentActivity': 'Aktivitas Terbaru',
+    'dashboard.viewAllActivity': 'Lihat Semua Aktivitas',
+    'dashboard.quickActions' : 'Tindakan Cepat',
+    'dashboard.manageStudents' : 'Kelola Siswa',
+    'dashboard.manageUsers' : 'Kelola Pengguna',
+    'dashboard.manageClasses' : 'Kelola Kelas',
+    'dashboard.systemSettings' : 'Pengaturan Sistem',
+    'dashboard.pendingAssessments': 'Penilaian Tertunda',
+    'dashboard.scheduleManagement': 'Manajemen Jadwal',
+    'dashboard.manageYourSessions': 'Kelola Sesi Anda',
+    'dashboard.viewSchedule': 'Lihat Jadwal',
+    'dashboard.viewStudents': 'Lihat Siswa',
+    'dashboard.scheduleSession': 'Jadwalkan Sesi',
+    'dashboard.assessStudents': 'Penilaian Siswa',
+    'dashboard.trackBehavior': 'Pelacakan Perilaku',
+    'dashboard.takeAssessment': 'Lakukan Penilaian',
+    'dashboard.progressTracking': 'Pelacakan Kemajuan',
+    'dashboard.viewProgress': 'Lihat Kemajuan',
+    'dashboard.viewDetails' : 'Lihat Detail',
+    'dashboard.exploreCareerOptions': 'Jelajahi Opsi Karir',
+    'dashboard.careerInsights' : 'Wawasan Karir',
+
     // Navigation
+    'nav.dashboard': 'Dasbor',
     'nav.profile': 'Profil',
     'nav.students': 'Siswa',
     'nav.sessions': 'Sesi Konseling',
@@ -20,6 +51,9 @@ const translations: Translations = {
     'nav.classes': 'Kelas',
     'nav.userManagement': 'Manajemen Pengguna',
     'nav.settings': 'Pengaturan',
+    'nav.reports': 'Laporan',
+    'nav.flowchart': 'Diagram Alur',
+    'nav.userManual': 'Buku Panduan Pengguna',
     'nav.logout': 'Keluar',
 
     // Classes Page
@@ -78,6 +112,10 @@ const translations: Translations = {
     'classes.needsAttention' : 'Perlu Perhatian',
     'classes.goodStatus' : 'Baik',
     'classes.downloadReport' : 'Unduh Laporan',
+    'classes.viewDeleted' : 'Lihat Kelas Dihapus',
+    'classes.confirmDelete': 'Konfirmasi Penghapusan Kelas',
+    'classes.deleteWarning' : 'Anda yangin ingin menghapus kelas',
+    'classes.deleteNote' : 'Tindakan ini tidak dapat dibatalkan. Semua data terkait kelas ini akan hilang.',
 
 
     // Students Page
@@ -94,7 +132,37 @@ const translations: Translations = {
     'students.noResults': 'Tidak ada siswa yang cocok dengan kriteria pencarian Anda.',
     'students.delete': 'Hapus',
     'students.edit': 'Edit',
-    
+    'students.plural': 'siswa',
+    'view.table': 'Tampilan Tabel',
+    'view.card': 'Tampilan Kartu',
+    'search.placeholder': 'Cari siswa...',
+    'filter.all': 'Semua Status',
+    'actions.export': 'Ekspor Data',
+    'table.avatar': 'Avatar',	
+    'table.name': 'Nama Siswa',
+    'table.class': 'Kelas',
+    'table.email' : 'Email',
+    'table.status': 'Status Akademik',
+    'table.mentalHealth': 'Kesehatan Mental',
+    'table.actions' : 'Tindakan',
+    'pagination.previous' : 'Sebelumnya',
+    'pagination.next' : 'Selanjutnya',
+    'search.from': 'Dari',
+    'pagination.page': 'Halaman',
+    'pagination.of': 'dari',
+    'pagination.showing': 'Menampilkan',
+    'limit.all': 'Semua',
+    'limit.ten': '10',
+    'limit.hundred': '100',
+    'limit.fiveHundred': '500',
+    'table.studentId' : 'ID Siswa',
+    'actions.delete': 'Hapus Siswa',
+    'confirm.deleteMultiple': 'Hapus Beberapa Siswa',
+    'confirm.deleteMultipleMessage': 'Anda yakin ingin menghapus siswa berikut? Tindakan ini tidak dapat dibatalkan.',
+    'confirm.studentsToDelete' : 'Siswa yang Akan Dihapus',
+    'students.confirmDeleteTitle': 'Konfirmasi Penghapusan Siswa',
+    'students.confirmDeleteMessage' : 'Anda yakin ingin menghapus siswa ini? Tindakan ini tidak dapat dibatalkan.',
+
     // Student Status
     'status.good': 'Baik',
     'status.warning': 'Perhatian',
@@ -130,6 +198,7 @@ const translations: Translations = {
     'studentDetail.notAssessed': 'Belum dinilai',
     'studentDetail.never': 'Belum pernah',
     'studentDetail.totalSessions': 'Total Sesi',
+    'studentDetail.mentalHealthScore': 'Skor Kesehatan Mental',
 
     // Sessions Page
     'sessions.title': 'Sesi Konseling',
@@ -187,6 +256,8 @@ const translations: Translations = {
     'riskLevels.high': 'Risiko Tinggi',
 
     // Behavior Page
+    'behavior.studentTitle':  'Pantau Perilaku Siswa',
+    'behavior.studentSubtitle':   'Pantau dan catat perilaku siswa untuk identifikasi pola dan intervensi dini',
     'behavior.title': 'Pelacakan Perilaku',
     'behavior.subtitle': 'Pantau dan catat perilaku siswa untuk identifikasi pola dan intervensi dini',
     'behavior.search': 'Cari catatan perilaku...',
@@ -243,8 +314,37 @@ const translations: Translations = {
     'behavior.recordType.attendance': 'Kehadiran',
     'behavior.recordType.discipline': 'Kedisiplinan',
     'behavior.recordType.participation': 'Partisipasi',
+    'behavior.recordCreated': 'Catatan berhasil dibuat',
+    'behavior.recordUpdated': 'Catatan berhasil diperbarui',
+    'behavior.recordDeleted': 'Catatan berhasil dihapus',
     'behavior.addFirstRecord': 'Tambah Catatan Pertama',
     'behavior.noRecordsFound': 'Tidak ada catatan ditemukan. Tambahkan catatan baru untuk memulai!',
+    'behavior.createNewRecord': 'Buat Catatan Baru',
+    'behavior.selectStudent': 'Pilih Siswa',
+    'behavior.selectStudentPrompt': 'Pilih siswa untuk menambahkan catatan perilaku',
+    'behavior.category.label': 'Kategori Perilaku',
+    'behavior.severity.label': 'Tingkat Keparahan',
+    'behavior.description': 'Deskripsi',
+    'behavior.descriptionPlaceholder': 'Masukkan deskripsi perilaku',
+    'behavior.date': 'Tanggal',
+    'behavior.actionTaken':  'Tindakan yang Diambil',
+    'common.optional': 'Opsional',
+    'behavior.actionTakenPlaceholder': 'Masukkan tindakan yang diambil',
+    'behavior.reportedBy': 'Dilaporkan Oleh',
+    'behavior.table.date': 'Tanggal',
+    'behavior.table.student': 'Siswa',
+    'behavior.table.category':  'Kategori',
+    'behavior.table.severity': 'Keparahan',
+    'behavior.table.description' : 'Deskripsi',
+    'behavior.table.actionTaken' :  'Tindakan yang Diambil',
+    'behavior.table.reporter' : 'Pelapor',
+    'behavior.table.actions': 'Tindakan',
+    'behavior.severity':  'Tingkat Keparahan',
+    'behavior.category': 'Kategori',
+    'behavior.student': 'Siswa',
+    'behavior.editRecord': 'Edit Catatan',
+    'behavior.confirmDelete': 'Konfirmasi Penghapusan Catatan',
+    'behavior.deleteWarning': 'Anda yakin ingin menghapus catatan ini?',
 
 
     // Career Page
@@ -269,6 +369,13 @@ const translations: Translations = {
     'career.stats.resourcesShared': 'Sumber Daya Dibagikan',
     'career.stats.pendingDiscussions': 'Diskusi Tertunda',
     'career.backToAssessments': 'Kembali ke Penilaian Karir',
+    'career.tabs.overview' : 'Ikhtisar',
+    'career.tabs.courses': 'Kursus',
+    'career.tabs.paths': 'Jalur Karir',
+    'career.tabs.assessments': 'Penilaian',
+    'career.tabs.resources': 'Sumber Daya',
+    'career.noAssessments': 'Belum ada penilaian karir',
+
 
     // Settings Page
     'settings.subtitle': 'Kelola pengaturan aplikasi dan preferensi pengguna',
@@ -303,6 +410,11 @@ const translations: Translations = {
     'common.save': 'Simpan',
     'common.cancel': 'Batal',
     'common.close': 'Tutup',
+    'common.saving': 'Menyimpan...',
+    'common.deleting': 'Menghapus...',
+    'common.delete': 'Hapus',
+    'common.update': 'Perbarui',
+    'common.updating': 'Memperbarui...',
 
     // Login Page
     'login.platformDescription': 'Platform komprehensif untuk konselor, siswa, dan administrator untuk mengelola dukungan kesehatan mental.',
@@ -335,6 +447,7 @@ const translations: Translations = {
     'login.sendResetLink': 'Kirim Tautan Reset',
     'login.sending': 'Mengirim...',
     'login.resetEmailSent': 'Email telah dikirim! Periksa kotak masuk Anda untuk tautan reset kata sandi.',
+
 
     // Layout related translations
     'greeting.morning': 'Selamat Pagi',
@@ -422,6 +535,10 @@ const translations: Translations = {
     'settings.roles.student': 'Siswa',
     'settings.roles.staff': 'Staf',
     'settings.password': 'Kata Sandi',
+    'setting.close': 'Close',
+    'settings.saveChanges': 'Simpan Perubahan',
+    'settings.create': 'Buat Pengguna',
+    'settings.update':  'Ubah Pengguna',
 
     // Profile Page
     'profile.title': 'Profil Pengguna',
@@ -603,7 +720,39 @@ const translations: Translations = {
   'assessmentTypes.wsas': 'Skala Penyesuaian Kerja & Sosial',
   },
   en: {
+    // Dashboard
+    'dashboard.totalStudents': 'Total Students',
+    'dashboard.viewAll' : 'View All',
+    'dashboard.totalClasses'  : 'Total Classes',
+    'dashboard.upcomingSessions': 'Upcoming Sessions',
+    'dashboard.studentsAtRisk'  : 'Students at Risk',
+    'dashboard.trendsAndInsights' :  'Trends & Insights',
+    'dashboard.viewAdminInsights' : 'View Admin Insights',
+    'dashboard.recentActivity': 'Recent Activity',
+    'dashboard.viewAllActivity': 'View All Activity',
+    'dashboard.quickActions' : 'Quick Actions',
+    'dashboard.manageStudents' : 'Manage Students',
+    'dashboard.manageUsers' : 'Manage Users',
+    'dashboard.manageClasses' : 'Manage Classes',
+    'dashboard.systemSettings' : 'System Settings',
+    'dashboard.pendingAssessments': 'Pending Assessments',
+    'dashboard.scheduleManagement': 'Schedule Management',
+    'dashboard.manageYourSessions': 'Manage Your Sessions',
+    'dashboard.viewSchedule': 'View Schedule',
+    'dashboard.viewStudents': 'View Students',
+    'dashboard.scheduleSession': 'Schedule Session',
+    'dashboard.assessStudents': 'Assess Students',
+    'dashboard.trackBehavior': 'Track Behavior',
+    'dashboard.takeAssessment': 'Take Assessment',
+    'dashboard.progressTracking':   'Progress Tracking',
+    'dashboard.viewProgress': 'View Progress',
+    'dashboard.viewDetails' : 'View Details',
+    'dashboard.exploreCareerOptions': 'Explore Career Options',
+    'dashboard.careerInsights' :  'Career Insights',
+
+
     // Navigation
+    'nav.dashboard': 'Dashboard',
     'nav.profile': 'Profile',
     'nav.students': 'Students',
     'nav.sessions': 'Counseling Sessions',
@@ -613,6 +762,9 @@ const translations: Translations = {
     'nav.classes': 'Classes',
     'nav.userManagement': 'User Management',
     'nav.settings': 'Settings',
+    'nav.reports': 'Reports',
+    'nav.flowchart': 'Flowchart',
+    'nav.userManual': 'User Manual',
     'nav.logout': 'Logout',
     
     // Classes Page
@@ -671,6 +823,10 @@ const translations: Translations = {
     'classes.needsAttention' : 'Needs Attention',
     'classes.goodStatus' : 'Good',
     'classes.downloadReport' : 'Download Report',
+    'classes.viewDeleted' : 'View Deleted Classes',
+    'classes.confirmDelete': 'Confirm Delete Class',
+    'classes.deleteWarning' : 'Are you sure you want to delete class',
+    'classes.deleteNote' : 'This action cannot be undone. All associated data will be permanently removed.',
    
 
     // Students Page
@@ -687,7 +843,37 @@ const translations: Translations = {
     'students.noResults': 'No students match your search criteria.',
     'students.delete': 'Delete',
     'students.edit': 'Edit',
-    
+    'view.table': 'Table View',
+    'view.card':  'Card View',
+    'search.placeholder': 'Search by name, email, or class...',
+    'filter.all': 'All Students',
+    'actions.export': 'Export Students',
+    'table.avatar': 'Avatar',
+    'table.name': 'Name',
+    'table.class': 'Class',
+    'table.email' : 'Email',
+    'table.status': 'Status',
+    'table.mentalHealth':   'Mental Health',
+    'table.actions' : 'Actions',
+    'pagination.previous' : 'Previous',
+    'pagination.next' : 'Next',
+    'search.from': 'From',
+    'pagination.page': 'Page',
+    'pagination.of': 'of',
+    'pagination.showing': 'Showing',
+    'students.plural': 'Students',
+    'limit.all':  'All',
+    'limit.ten': '10',
+    'limit.hundred': '100',
+    'limit.fiveHundred': '500',
+    'table.studentId': 'Student ID',
+    'actions.delete': 'Delete Student',
+    'confirm.deleteMultiple': 'Delete Multiple Students',
+    'confirm.deleteMultipleMessage': 'Are you sure you want to delete these students? This action cannot be undone.',
+    'confirm.studentsToDelete' : 'Students to Delete',
+    'students.confirmDeleteTitle': 'Confirm Delete Student',
+    'students.confirmDeleteMessage' : 'Are you sure you want to delete this student? This action cannot be undone.',
+
     // Student Status
     'status.good': 'Good',
     'status.warning': 'Warning',
@@ -723,6 +909,7 @@ const translations: Translations = {
     'studentDetail.notAssessed': 'Not assessed',
     'studentDetail.never': 'Never',
     'studentDetail.totalSessions': 'Total Sessions',
+    'studentDetail.mentalHealthScore': 'Mental Health Score',
 
     // Sessions Page
     'sessions.title': 'Counseling Sessions',
@@ -780,6 +967,8 @@ const translations: Translations = {
     'riskLevels.high': 'High Risk',
 
     // Behavior Page
+    'behavior.studentTitle': 'Student Behavior Tracking',
+    'behavior.studentSubtitle': 'Monitor and record student behavior for pattern identification and early intervention',
     'behavior.title': 'Behavior Tracking',
     'behavior.subtitle': 'Monitor and record student behavior for pattern identification and early intervention',
     'behavior.search': 'Search behavior records...',
@@ -858,6 +1047,32 @@ const translations: Translations = {
     'behavior.recordViewDetails': 'View Record Details',
     'behavior.addFirstRecord': 'Add First Record',
     'behavior.noRecordsFound': 'No records found. Add your first record to get started!',
+    'behavior.createNewRecord': 'Create New Record',
+    'behavior.selectStudent':  'Select Student',
+    'behavior.selectStudentPrompt': 'Select a student to track behavior',
+    'behavior.category.label':  'Category',
+    'behavior.severity.label': 'Severity',
+    'behavior.description': 'Description',
+    'behavior.descriptionPlaceholder': 'Enter behavior description',
+    'behavior.date':  'Date',
+    'behavior.actionTaken':   'Action Taken',
+    'common.optional': '(optional)',
+    'behavior.actionTakenPlaceholder':  'Enter any actions taken for this behavior',
+    'behavior.reportedBy': 'Reported By',
+    'behavior.table.date':  'Date',
+    'behavior.table.student':   'Student',
+    'behavior.table.category':    'Category',
+    'behavior.table.severity':  'Severity',
+    'behavior.table.description' :  'Description',
+    'behavior.table.actionTaken' :    'Action Taken',
+    'behavior.table.reporter' :   'Reported By',
+    'behavior.table.actions': 'Actions',
+    'behavior.category': 'Category',
+    'behavior.student': 'Student',
+    'behavior.editRecord': 'Edit Record',
+    'behavior.confirmDelete': 'Confirm Delete Record',
+    'behavior.deleteWarning': 'Are you sure you want to delete this record? This action cannot be undone.',
+
 
     // Career Page
     'career.title': 'Career Guidance',
@@ -881,6 +1096,12 @@ const translations: Translations = {
     'career.stats.resourcesShared': 'Resources Shared',
     'career.stats.pendingDiscussions': 'Pending Discussions',
     'career.backToAssessments': 'Back to Career Assessments',
+    'career.tabs.overview' : 'Overview',
+    'career.tabs.courses': 'Courses',
+    'career.tabs.paths': 'Paths',
+    'career.tabs.assessments': 'Assessments',
+    'career.tabs.resources': 'Resources',
+    'career.noAssessments': 'No career assessments yet',
 
     // Settings Page
     'settings.subtitle': 'Manage application settings and user preferences',
@@ -919,6 +1140,11 @@ const translations: Translations = {
     'common.save': 'Save',
     'common.cancel': 'Cancel',
     'common.close': 'Close',
+    'common.saving': 'Saving...',
+    'common.deleting': 'Deleting...',
+    'common.delete': 'Delete',
+    'common.update':  'Update',
+    'common.updating':   'Updating...',
 
     // Login Page
     'login.platformDescription': 'A comprehensive platform for counselors, students, and administrators to manage mental health support.',
@@ -1047,6 +1273,10 @@ const translations: Translations = {
     'settings.importCSVDescription': 'Review the users that will be imported from your CSV file. Click "Import" to add these users to the system.',
     'settings.searchUsers': 'Search users...',
     'settings.language': 'Language',
+    'setting.close': 'Close',
+    'settings.saveChanges': 'Save Changes',
+    'settings.create': 'Create',
+    'settings.update': 'Update',
 
     // Profile Page
     'profile.title': 'User Profile',

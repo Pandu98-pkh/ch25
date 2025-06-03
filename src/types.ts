@@ -1,20 +1,25 @@
 // Define semua tipe data yang digunakan dalam aplikasi
 
 export interface Student {
-  id: string;
+  studentId: string; // Nomor Induk Siswa sebagai primary key
   name: string;
   email: string;
   tingkat: string;
   kelas: string;
+  classId?: string; // Foreign key to classes table
   academicStatus: 'good' | 'warning' | 'critical';
   avatar?: string;
   // Properti lama (untuk kompatibilitas)
+  id?: string;
   grade?: string;
   class?: string;
   photo?: string;
   program?: string;
   mentalHealthScore?: number;
   lastCounseling?: string;
+  // Metadata for hybrid image storage
+  avatar_type?: 'base64' | 'file' | 'url';
+  avatar_filename?: string;
 }
 
 export interface CounselingSession {
@@ -26,6 +31,12 @@ export interface CounselingSession {
   type: 'academic' | 'behavioral' | 'mental-health' | 'career' | 'social';
   outcome: 'positive' | 'neutral' | 'negative';
   nextSteps?: string;
+  followUp?: string;
+  // Approval workflow fields
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
   counselor?: {
     id: string;
     name: string;
@@ -45,13 +56,24 @@ export interface MentalHealthAssessment {
     id: string;
     name: string;
   };
+  responses?: Record<number, number>;
+  mlInsights?: {
+    severity?: 'mild' | 'moderate' | 'severe';
+    confidenceScore?: number;
+    recommendedActions?: string[];
+    riskFactors?: string[];
+  };
 }
 
 export interface BehaviorRecord {
   id: string;
   studentId: string;
+  student?: {
+    id: string;
+    name: string;
+  };
   date: string;
-  type: 'positive' | 'negative';
+  type: 'positive' | 'negative' | 'attendance' | 'discipline' | string;
   description: string;
   severity: 'positive' | 'neutral' | 'minor' | 'major';
   reporter: {
@@ -59,7 +81,8 @@ export interface BehaviorRecord {
     name: string;
   };
   actionTaken?: string;
-  category?: string; // Adding the missing category field
+  category?: string;
+  followUpRequired?: boolean;
 }
 
 // Career Assessment interface
@@ -74,6 +97,7 @@ export interface CareerAssessment {
   recommendedPaths: string[];
   notes?: string;
   interestAreas?: string[];
+  results?: string; // JSON string of detailed assessment results
 }
 
 // MBTI Assessment Types
@@ -107,13 +131,17 @@ export interface CareerResource {
 }
 
 export interface User {
-  id: string;
+  userId: string; // ID khusus berdasarkan peran yang digunakan sebagai primary key
   name: string;
   email: string;
-  role: 'admin' | 'counselor' | 'student';
+  role: 'admin' | 'counselor' | 'student' | 'staff';
   username?: string;
   password?: string;
   photo?: string | null;
+  avatar?: string;
+  avatarType?: 'base64' | 'file' | 'url';
+  avatarFilename?: string;
+  id?: string; // Field lama (untuk kompatibilitas)
 }
 
 // API Response interface
@@ -144,7 +172,10 @@ export interface FilterParams {
   tingkat?: string;
   kelas?: string;
   academicStatus?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   searchQuery?: string;
+  page?: number;
+  limit?: number;
   studentId?: string;
 }
 
@@ -154,15 +185,23 @@ export interface StudentFormData {
   email: string;
   tingkat: string;
   kelas: string;
+  classId?: string; // Foreign key to classes table
   academicStatus: 'good' | 'warning' | 'critical';
   avatar?: string;
+  studentId: string; // Nomor Induk Siswa
+  // Metadata for hybrid image storage
+  avatar_type?: 'base64' | 'file' | 'url';
+  avatar_filename?: string;
 }
 
 export interface Class {
-  id: string;
+  classId: string; // Primary key for classes table
   name: string;
   gradeLevel: string;
   studentCount: number;
   academicYear: string;
   teacherName?: string;
+  // Legacy fields for backward compatibility
+  id?: string; // Old id field
+  schoolId?: string; // Old schoolId field
 }

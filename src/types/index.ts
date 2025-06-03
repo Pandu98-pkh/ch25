@@ -1,6 +1,7 @@
 // Model types
 export interface Student {
   id: string;
+  studentId?: string; // For compatibility with studentService  
   name: string;
   grade: string;
   class: string;
@@ -25,6 +26,11 @@ export interface CounselingSession {
   outcome: 'positive' | 'neutral' | 'negative';
   nextSteps?: string;
   followUp?: string;
+  // Approval workflow fields
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
   counselor: {
     id: string;
     name: string;
@@ -40,7 +46,7 @@ export interface MentalHealthAssessment {
   notes?: string;
   date: string;
   category: string;
-  assessor: string;
+  assessor: string | { id: string; name: string; };
   mlInsights?: MLInsights;
   responses?: Record<number, number>;
   followUp?: {
@@ -94,6 +100,7 @@ export interface CareerAssessment {
   notes?: string;
   interestAreas?: string[];
   strengthAreas?: string[];
+  results?: string; // JSON string of detailed assessment results
   assessor?: {
     id: string;
     name: string;
@@ -138,11 +145,16 @@ export interface LegacyApiResponse<T> {
 // Authentication types
 export interface User {
   id: string;
+  userId?: string;
   username: string;
   email: string;
   name: string;
-  role: 'counselor' | 'admin' | 'teacher';
+  role: 'counselor' | 'admin' | 'teacher' | 'student' | 'staff';
+  password?: string;
   photo?: string;
+  avatar?: string;
+  avatarType?: 'base64' | 'file' | 'url';
+  avatarFilename?: string;
   token?: string;
 }
 
@@ -176,6 +188,9 @@ export interface FilterParams {
   academicStatus?: string;
   searchQuery?: string;
   studentId?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  page?: number;
+  limit?: number;
 }
 
 // Interface for student form data

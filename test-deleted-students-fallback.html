@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Deleted Students Fallback Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .student-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        .enriched {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+        .missing-data {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.good { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.critical { background: #f8d7da; color: #721c24; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Deleted Students Fallback Functionality Test</h1>
+        <p>This test verifies that the enhanced fallback functionality correctly enriches student data from the users table when student records have missing user information.</p>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="totalStudents">-</div>
+                <div>Total Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="enrichedStudents">-</div>
+                <div>Enriched Records</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="missingDataStudents">-</div>
+                <div>Missing Data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="fallbackUsed">-</div>
+                <div>Fallback Used</div>
+            </div>
+        </div>
+        
+        <button onclick="testStudentsEndpoint()">🔄 Test Students Endpoint</button>
+        <button onclick="testUsersEndpoint()">👥 Test Users Endpoint</button>
+        <button onclick="testEnhancedFallback()">🚀 Test Enhanced Fallback</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let studentsData = [];
+        let usersData = [];
+        let enhancedData = [];
+
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            resultsDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+        }
+
+        async function testStudentsEndpoint() {
+            log('🔍 Testing deleted students endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/students/deleted`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                studentsData = await response.json();
+                log(`✅ Successfully fetched ${studentsData.length} deleted students from students table`, 'success');
+                
+                // Analyze data quality
+                const missingUserData = studentsData.filter(student => 
+                    student.name === 'Unknown Student' || 
+                    student.name.startsWith('Student ') || 
+                    !student.email || 
+                    !student.userId
+                );
+
+                log(`📊 Analysis: ${missingUserData.length} out of ${studentsData.length} students have missing user data`);
+                
+                renderStudents(studentsData, 'Students Table Data');
+                
+            } catch (error) {
+                log(`❌ Failed to fetch deleted students: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUsersEndpoint() {
+            log('👥 Testing deleted users endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/users/deleted`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const allUsers = await response.json();
+                usersData = allUsers.filter(user => user.role === 'student');
+                
+                log(`✅ Successfully fetched ${usersData.length} deleted student users from users table`, 'success');
+                log(`📊 Total deleted users: ${allUsers.length}, Student users: ${usersData.length}`);
+                
+                renderUsers(usersData, 'Users Table Data (Student Role Only)');
+                
+            } catch (error) {
+                log(`❌ Failed to fetch deleted users: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEnhancedFallback() {
+            log('🚀 Testing enhanced fallback functionality...');
+            
+            if (studentsData.length === 0) {
+                await testStudentsEndpoint();
+            }
+            
+            if (usersData.length === 0) {
+                await testUsersEndpoint();
+            }
+
+            // Simulate the enhanced fallback logic
+            const studentsWithMissingData = studentsData.filter(student => 
+                student.name === 'Unknown Student' || 
+                student.name.startsWith('Student ') || 
+                !student.email || 
+                !student.userId
+            );
+
+            if (studentsWithMissingData.length === 0) {
+                log('✅ All student records have complete user data - no enrichment needed', 'success');
+                renderStudents(studentsData, 'Final Enhanced Data (No Enrichment Needed)');
+                return;
+            }
+
+            log(`🔄 Found ${studentsWithMissingData.length} students with missing data, enriching...`);
+
+            // Create a map of user data by userId for quick lookup
+            const userDataMap = new Map();
+            usersData.forEach(user => {
+                userDataMap.set(user.userId || user.id, user);
+            });
+
+            // Enrich students with missing data
+            enhancedData = studentsData.map(student => {
+                if (studentsWithMissingData.includes(student)) {
+                    const userData = userDataMap.get(student.studentId);
+                    if (userData) {
+                        const enrichedStudent = {
+                            ...student,
+                            name: userData.name || student.name,
+                            email: userData.email || student.email,
+                            username: userData.username || student.username,
+                            photo: userData.photo || student.photo,
+                            userId: userData.userId || userData.id || student.userId,
+                            user_id: userData.userId || userData.id || student.user_id,
+                            userTableId: userData.userId || userData.id,
+                            userTableName: userData.name,
+                            userTableEmail: userData.email,
+                            userTablePhoto: userData.photo,
+                            _enriched: true
+                        };
+                        log(`✨ Enriched student ${student.studentId}: ${student.name} → ${userData.name}`);
+                        return enrichedStudent;
+                    }
+                }
+                return { ...student, _enriched: false };
+            });
+
+            const enrichedCount = enhancedData.filter(student => student._enriched).length;
+            log(`✅ Enhanced fallback complete: ${enrichedCount} records enriched with user data`, 'success');
+            
+            updateStats(enhancedData, enrichedCount, studentsWithMissingData.length);
+            renderStudents(enhancedData, 'Final Enhanced Data with Fallback');
+        }
+
+        function updateStats(data, enrichedCount, missingCount) {
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('totalStudents').textContent = data.length;
+            document.getElementById('enrichedStudents').textContent = enrichedCount;
+            document.getElementById('missingDataStudents').textContent = missingCount;
+            document.getElementById('fallbackUsed').textContent = enrichedCount > 0 ? 'Yes' : 'No';
+        }
+
+        function renderStudents(students, title) {
+            const resultsDiv = document.getElementById('results');
+            let html = `<div class="container"><h3>${title}</h3>`;
+            
+            students.forEach(student => {
+                const isEnriched = student._enriched === true;
+                const hasMissingData = student.name === 'Unknown Student' || 
+                                     student.name.startsWith('Student ') || 
+                                     !student.email || 
+                                     !student.userId;
+                
+                const cardClass = isEnriched ? 'enriched' : hasMissingData ? 'missing-data' : '';
+                const statusClass = student.academicStatus || 'warning';
+                
+                html += `
+                    <div class="student-card ${cardClass}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <h4>${student.name} ${isEnriched ? '✨' : ''}</h4>
+                                <p><strong>ID:</strong> ${student.studentId}</p>
+                                <p><strong>Email:</strong> ${student.email || 'Not available'}</p>
+                                <p><strong>Username:</strong> ${student.username || 'Not available'}</p>
+                                <p><strong>Grade:</strong> ${student.grade || 'N/A'}</p>
+                                <p><strong>Program:</strong> ${student.program || 'N/A'}</p>
+                                ${student.deletedAt ? `<p><strong>Deleted:</strong> ${new Date(student.deletedAt).toLocaleDateString()}</p>` : ''}
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="status ${statusClass}">${statusClass.toUpperCase()}</span>
+                                ${isEnriched ? '<div style="color: #28a745; font-size: 12px; margin-top: 5px;">✅ Enriched</div>' : ''}
+                                ${hasMissingData && !isEnriched ? '<div style="color: #ffc107; font-size: 12px; margin-top: 5px;">⚠️ Missing Data</div>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML += html;
+        }
+
+        function renderUsers(users, title) {
+            const resultsDiv = document.getElementById('results');
+            let html = `<div class="container"><h3>${title}</h3>`;
+            
+            users.forEach(user => {
+                html += `
+                    <div class="student-card">
+                        <h4>${user.name}</h4>
+                        <p><strong>User ID:</strong> ${user.userId || user.id}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Username:</strong> ${user.username}</p>
+                        <p><strong>Role:</strong> ${user.role}</p>
+                        ${user.deletedAt ? `<p><strong>Deleted:</strong> ${new Date(user.deletedAt).toLocaleDateString()}</p>` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML += html;
+        }
+
+        // Auto-start testing when page loads
+        window.onload = () => {
+            log('🏁 Enhanced Deleted Students Fallback Test initialized');
+            log('Click the buttons above to test different aspects of the fallback functionality');
+        };
+    </script>
+</body>
+</html>

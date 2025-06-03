@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Class, FilterParams } from '../types';
 import ClassCard from '../components/ClassCard';
 import AddClassForm from '../components/AddClassForm';
-import { Search, Plus, RefreshCcw, AlertCircle, Filter, BookOpen, GraduationCap, School } from 'lucide-react';
+import { Search, Plus, RefreshCcw, AlertCircle, Filter, BookOpen, GraduationCap, School, Trash2, Archive } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getClasses, createClass } from '../services/classService';
+import { getClasses, createClass, softDeleteClass } from '../services/classService';
 import axios, { AxiosError } from 'axios';
 import { createAbortController } from '../services/api';
 import { cn } from '../utils/cn';
@@ -24,9 +24,22 @@ export default function ClassesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [filterGradeLevel, setFilterGradeLevel] = useState<'all' | 'X' | 'XI' | 'XII'>('all');
   const [retryCount, setRetryCount] = useState(0);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Class | null>(null);
   const MAX_RETRIES = 3;
   const { t } = useLanguage();
   const navigate = useNavigate();
+
+  // Function to convert Roman numerals to numbers for API
+  const mapGradeToNumber = (grade: 'all' | 'X' | 'XI' | 'XII'): string | undefined => {
+    switch (grade) {
+      case 'X': return '10';
+      case 'XI': return '11';
+      case 'XII': return '12';
+      case 'all': return undefined;
+      default: return undefined;
+    }
+  };
 
   // Function to load classes data
   const loadClasses = useCallback(async () => {
@@ -35,10 +48,12 @@ export default function ClassesPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      const filters: FilterParams = {};
+        const filters: FilterParams = {};
       if (searchTerm) filters.searchQuery = searchTerm;
-      if (filterGradeLevel !== 'all') filters.grade = filterGradeLevel;
+      if (filterGradeLevel !== 'all') {
+        const mappedGrade = mapGradeToNumber(filterGradeLevel);
+        if (mappedGrade) filters.grade = mappedGrade;
+      }
       
       const response = await getClasses(filters, currentPage);
       clearTimeout();
@@ -82,9 +97,29 @@ export default function ClassesPage() {
       setError(axiosError.response?.data?.detail || t('errors.creatingClass') || 'Gagal membuat data kelas');
     }
   };
-
   const handleClassClick = (classItem: Class) => {
-    navigate(`/classes/${classItem.id}/students`);
+    navigate(`/app/classes/${classItem.id}/students`);
+  };
+
+  const handleDeleteClass = async (classItem: Class) => {
+    setShowDeleteConfirmation(classItem);
+  };
+  const confirmDeleteClass = async () => {
+    if (!showDeleteConfirmation?.id) return;
+
+    try {
+      setDeleteLoading(showDeleteConfirmation.id);
+      await softDeleteClass(showDeleteConfirmation.id);
+      
+      // Remove the deleted class from the list
+      setClasses(prev => prev.filter(c => c.id !== showDeleteConfirmation.id));
+      setShowDeleteConfirmation(null);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.detail || t('errors.deletingClass') || 'Gagal menghapus kelas');
+    } finally {
+      setDeleteLoading(null);
+    }
   };
 
   const handleRetry = () => {
@@ -99,13 +134,14 @@ export default function ClassesPage() {
   const toggleFilter = (grade: 'all' | 'X' | 'XI' | 'XII') => {
     setFilterGradeLevel(prev => prev === grade ? 'all' : grade);
   };
-
   // Filter classes based on search term and grade level
   const filteredClasses = classes.filter((classItem) => {
     const matchesSearch = classItem.name.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Improve grade level filtering for exact matching
-    const matchesGrade = filterGradeLevel === 'all' || classItem.gradeLevel.split(' ')[0] === filterGradeLevel;
+    // Handle both number and Roman numeral grade levels
+    const matchesGrade = filterGradeLevel === 'all' || 
+      classItem.gradeLevel === mapGradeToNumber(filterGradeLevel) ||
+      classItem.gradeLevel.split(' ')[0] === filterGradeLevel;
     
     return matchesSearch && matchesGrade;
   });
@@ -153,8 +189,7 @@ export default function ClassesPage() {
               className="pl-10 pr-4 py-2.5 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
             />
           </div>
-          
-          <div className="flex gap-3">
+            <div className="flex gap-3">
             <div className="flex gap-2">
               <div className="bg-gray-100 p-1 rounded-lg flex">
                 {(['X', 'XI', 'XII'] as const).map(grade => (
@@ -172,8 +207,14 @@ export default function ClassesPage() {
                     {grade}
                   </button>
                 ))}
-              </div>
-            </div>
+              </div>            </div>
+            <button
+              onClick={() => navigate('/app/classes/deleted')}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200"
+            >
+              <Archive className="h-5 w-5 mr-2" />
+              {t('classes.viewDeleted') || 'Lihat Kelas Terhapus'}
+            </button>
             <button
               onClick={() => setShowAddForm(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-sm transition-all duration-200 transform hover:scale-105"
@@ -253,13 +294,13 @@ export default function ClassesPage() {
                 </button>
               )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ) : (            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredClasses.map((classItem) => (
                 <ClassCard
                   key={classItem.id}
                   classItem={classItem}
                   onClick={handleClassClick}
+                  onDelete={handleDeleteClass}
                 />
               ))}
             </div>
@@ -290,14 +331,55 @@ export default function ClassesPage() {
             </div>
           )}
         </>
-      )}
-
-      {/* Modal Form - Keep as is */}
+      )}      {/* Modal Form - Keep as is */}
       {showAddForm && (
         <AddClassForm
           onClose={() => setShowAddForm(false)}
           onSubmit={handleAddClass}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="bg-red-100 rounded-full p-2 mr-3">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('classes.confirmDelete') || 'Konfirmasi Hapus Kelas'}
+                </h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                {t('classes.deleteWarning') || 'Apakah Anda yakin ingin menghapus kelas'} <strong>{showDeleteConfirmation.name}</strong>? 
+                {t('classes.deleteNote') || ' Kelas akan dipindahkan ke tempat sampah dan dapat dipulihkan nanti.'}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirmation(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                >
+                  {t('actions.cancel') || 'Batal'}
+                </button>
+                <button
+                  onClick={confirmDeleteClass}                  disabled={deleteLoading === showDeleteConfirmation.id}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                >
+                  {deleteLoading === showDeleteConfirmation.id ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      {t('actions.deleting') || 'Menghapus...'}
+                    </div>
+                  ) : (
+                    t('actions.delete') || 'Hapus'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

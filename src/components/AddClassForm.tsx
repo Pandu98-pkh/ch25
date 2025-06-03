@@ -8,14 +8,14 @@ interface AddClassFormProps {
   onSubmit: (classData: Omit<Class, 'id'>) => void;
 }
 
-export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {
-  const { t } = useLanguage();
-  const [formData, setFormData] = useState({
+export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {  const { t } = useLanguage();  const [formData, setFormData] = useState({
     name: '',
     gradeLevel: '',
-    academicYear: new Date().getFullYear().toString(),
+    academicYear: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
     studentCount: 0,
-    teacherName: ''
+    teacherName: '',
+    schoolId: '',
+    classId: '' // Add classId field
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -33,9 +33,7 @@ export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {
         return newErrors;
       });
     }
-  };
-
-  const validate = () => {
+  };  const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
       newErrors.name = t('validation.required');
@@ -46,6 +44,7 @@ export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {
     if (!formData.academicYear.trim()) {
       newErrors.academicYear = t('validation.required');
     }
+    // schoolId is optional - backend will auto-generate if not provided
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,19 +83,21 @@ export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {
                 className={`w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500`}
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-            </div>
-
-            <div>
+            </div>            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('classes.gradeLevel')}*
               </label>
-              <input
-                type="text"
+              <select
                 name="gradeLevel"
                 value={formData.gradeLevel}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border ${errors.gradeLevel ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500`}
-              />
+              >
+                <option value="">Pilih tingkat kelas</option>
+                <option value="10">Kelas 10 (X)</option>
+                <option value="11">Kelas 11 (XI)</option>
+                <option value="12">Kelas 12 (XII)</option>
+              </select>
               {errors.gradeLevel && <p className="mt-1 text-sm text-red-600">{errors.gradeLevel}</p>}
             </div>
 
@@ -117,14 +118,45 @@ export default function AddClassForm({ onClose, onSubmit }: AddClassFormProps) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('classes.teacherName')}
-              </label>
-              <input
+              </label>              <input
                 type="text"
                 name="teacherName"
                 value={formData.teacherName}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
+            </div>            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('classes.maxStudents', 'Kuota Maksimal Siswa')}
+              </label>
+              <input
+                type="number"
+                name="studentCount"
+                value={formData.studentCount}
+                onChange={handleChange}
+                min="1"
+                max="50"
+                placeholder="Contoh: 30"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Masukkan jumlah maksimal siswa yang dapat diterima di kelas ini
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('classes.schoolId', 'ID Sekolah')} (Opsional)
+              </label>
+              <input
+                type="text"
+                name="schoolId"
+                value={formData.schoolId}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border ${errors.schoolId ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500`}
+                placeholder="Akan dibuat otomatis jika dikosongkan"
+              />
+              {errors.schoolId && <p className="mt-1 text-sm text-red-600">{errors.schoolId}</p>}
             </div>
           </div>
 

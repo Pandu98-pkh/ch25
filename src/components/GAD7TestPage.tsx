@@ -188,7 +188,7 @@ export default function GAD7TestPage() {
   };
 
   // Submit assessment
-  const handleSubmitAssessment = () => {
+  const handleSubmitAssessment = async () => {
     const score = calculateScore();
     const risk = getRiskLevel(score);
     const recommendations = getRecommendations(score);
@@ -349,14 +349,23 @@ Results should be reviewed with a qualified healthcare provider.`;
       recommendations
     };
     
-    // Add assessment to context
-    addAssessment(newAssessment);
-    setIsSubmitted(true);
+    console.log('GAD-7 Test completed, saving assessment:', newAssessment);
+    
+    try {
+      // Add assessment to context (which will save to database)
+      await addAssessment(newAssessment);
+      console.log('GAD-7 Assessment saved successfully to database');
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Error saving GAD-7 assessment:', error);
+      // Still show results even if save failed
+      setIsSubmitted(true);
+    }
   };
 
   // Navigate back to dashboard
   const handleReturnToDashboard = () => {
-    navigate('/mental-health');
+    navigate('/app/mental-health');
   };
 
   // Next step logic

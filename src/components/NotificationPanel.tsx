@@ -82,7 +82,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
         </div>
       </div>
 
-      <div className="max-h-[70vh] overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto scrollbar-light">
         {notifications.length === 0 ? (
           <div className="p-6 text-center">
             <Bell className="h-8 w-8 text-gray-300 mx-auto mb-2" />

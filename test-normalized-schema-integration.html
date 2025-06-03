@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Normalized Schema Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .success {
+            color: #28a745;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-loading { background-color: #ffc107; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Normalized Schema Integration Test</h1>
+        <p>Testing the integration between frontend and backend after database normalization.</p>
+    </div>
+
+    <div class="test-grid">
+        <!-- Backend API Tests -->
+        <div class="container">
+            <h2>🔧 Backend API Tests</h2>
+            
+            <div class="test-section" id="backend-connection">
+                <h3><span class="status-indicator status-loading"></span>Backend Connection</h3>
+                <p>Testing backend API connectivity...</p>
+                <div class="result" id="backend-result">Waiting...</div>
+            </div>
+            
+            <div class="test-section" id="students-api">
+                <h3><span class="status-indicator status-loading"></span>Students API</h3>
+                <p>Testing GET /api/students with normalized schema...</p>
+                <div class="result" id="students-result">Waiting...</div>
+            </div>
+            
+            <div class="test-section" id="create-student">
+                <h3><span class="status-indicator status-loading"></span>Create Student</h3>
+                <p>Testing POST /api/students with user creation...</p>
+                <div class="result" id="create-result">Waiting...</div>
+            </div>
+        </div>
+
+        <!-- Frontend Tests -->
+        <div class="container">
+            <h2>🎨 Frontend Component Tests</h2>
+            
+            <div class="test-section" id="student-form">
+                <h3>Add Student Form</h3>
+                <div class="form-group">
+                    <label>Student ID (NIS):</label>
+                    <input type="text" id="test-student-id" placeholder="TEST123" value="TEST123">
+                </div>
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" id="test-name" placeholder="Test Student" value="Integration Test Student">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="test-email" placeholder="test@school.edu" value="integration.test@school.edu">
+                </div>
+                <div class="form-group">
+                    <label>Tingkat:</label>
+                    <select id="test-tingkat">
+                        <option value="X">X</option>
+                        <option value="XI" selected>XI</option>
+                        <option value="XII">XII</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Kelas:</label>
+                    <input type="text" id="test-kelas" placeholder="IPA-1" value="IPA-1">
+                </div>
+                <button onclick="testCreateStudent()">Test Create Student</button>
+                <div class="result" id="form-result">Ready to test...</div>
+            </div>
+        </div>
+
+        <!-- Database Schema Tests -->
+        <div class="container">
+            <h2>🗄️ Database Schema Tests</h2>
+            
+            <div class="test-section" id="schema-check">
+                <h3><span class="status-indicator status-loading"></span>Schema Validation</h3>
+                <p>Verifying normalized schema structure...</p>
+                <div class="result" id="schema-result">Waiting...</div>
+            </div>
+            
+            <div class="test-section" id="join-test">
+                <h3><span class="status-indicator status-loading"></span>JOIN Query Test</h3>
+                <p>Testing student-user JOIN queries...</p>
+                <div class="result" id="join-result">Waiting...</div>
+            </div>
+        </div>
+
+        <!-- Integration Tests -->
+        <div class="container">
+            <h2>🔄 End-to-End Integration</h2>
+            
+            <div class="test-section" id="full-workflow">
+                <h3>Complete Workflow Test</h3>
+                <button onclick="runFullWorkflowTest()">Run Complete Test</button>
+                <div class="result" id="workflow-result">Click to run full workflow test...</div>
+            </div>
+            
+            <div class="test-section" id="test-summary">
+                <h3>Test Summary</h3>
+                <div id="summary-content">
+                    <p>Run tests to see summary...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let testResults = {};
+
+        function updateStatus(testId, status, message) {
+            const indicator = document.querySelector(`#${testId} .status-indicator`);
+            const result = document.getElementById(`${testId.replace('-', '-result')}`);
+            
+            if (indicator) {
+                indicator.className = `status-indicator status-${status}`;
+            }
+            
+            if (result) {
+                result.textContent = message;
+                result.className = `result ${status}`;
+            }
+            
+            testResults[testId] = { status, message };
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary-content');
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r.status === 'success').length;
+            const failed = Object.values(testResults).filter(r => r.status === 'error').length;
+            
+            summary.innerHTML = `
+                <p><strong>Tests Run:</strong> ${total}</p>
+                <p><strong>Passed:</strong> <span style="color: #28a745">${passed}</span></p>
+                <p><strong>Failed:</strong> <span style="color: #dc3545">${failed}</span></p>
+                <p><strong>Success Rate:</strong> ${total > 0 ? Math.round((passed/total)*100) : 0}%</p>
+            `;
+        }
+
+        async function testBackendConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/students?page=1&limit=1`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('backend-connection', 'success', 
+                        `✓ Backend connected successfully\nStatus: ${response.status}\nData structure: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateStatus('backend-connection', 'error', 
+                        `✗ Backend connection failed\nStatus: ${response.status}\nResponse: ${await response.text()}`);
+                }
+            } catch (error) {
+                updateStatus('backend-connection', 'error', 
+                    `✗ Backend connection error: ${error.message}`);
+            }
+        }
+
+        async function testStudentsAPI() {
+            try {
+                const response = await fetch(`${API_BASE}/students`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        const student = data.data[0];
+                        const hasUserData = student.name && student.email;
+                        const hasStudentData = student.tingkat && student.kelas;
+                        
+                        if (hasUserData && hasStudentData) {
+                            updateStatus('students-api', 'success', 
+                                `✓ Students API working with normalized schema\nSample record:\n${JSON.stringify(student, null, 2)}`);
+                        } else {
+                            updateStatus('students-api', 'warning', 
+                                `⚠ Students API responding but missing expected fields\nReceived: ${JSON.stringify(student, null, 2)}`);
+                        }
+                    } else {
+                        updateStatus('students-api', 'warning', 
+                            `⚠ Students API responding but no data found`);
+                    }
+                } else {
+                    updateStatus('students-api', 'error', 
+                        `✗ Students API failed\nStatus: ${response.status}`);
+                }
+            } catch (error) {
+                updateStatus('students-api', 'error', 
+                    `✗ Students API error: ${error.message}`);
+            }
+        }
+
+        async function testCreateStudentAPI() {
+            try {
+                const studentData = {
+                    name: 'API Test Student',
+                    email: 'apitest@school.edu',
+                    studentId: 'APITEST' + Date.now(),
+                    tingkat: 'XI',
+                    kelas: 'IPA-2',
+                    academicStatus: 'good',
+                    avatar: ''
+                };
+
+                const response = await fetch(`${API_BASE}/students`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(studentData)
+                });
+
+                if (response.ok) {
+                    const created = await response.json();
+                    updateStatus('create-student', 'success', 
+                        `✓ Student created successfully with normalized schema\nCreated student:\n${JSON.stringify(created, null, 2)}`);
+                } else {
+                    const errorText = await response.text();
+                    updateStatus('create-student', 'error', 
+                        `✗ Create student failed\nStatus: ${response.status}\nError: ${errorText}`);
+                }
+            } catch (error) {
+                updateStatus('create-student', 'error', 
+                    `✗ Create student error: ${error.message}`);
+            }
+        }
+
+        async function testCreateStudent() {
+            const formResult = document.getElementById('form-result');
+            formResult.textContent = 'Creating student...';
+            formResult.className = 'result loading';
+
+            try {
+                const studentData = {
+                    name: document.getElementById('test-name').value,
+                    email: document.getElementById('test-email').value,
+                    studentId: document.getElementById('test-student-id').value,
+                    tingkat: document.getElementById('test-tingkat').value,
+                    kelas: document.getElementById('test-kelas').value,
+                    academicStatus: 'good',
+                    avatar: ''
+                };
+
+                const response = await fetch(`${API_BASE}/students`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(studentData)
+                });
+
+                if (response.ok) {
+                    const created = await response.json();
+                    formResult.textContent = `✓ Student created successfully!\n${JSON.stringify(created, null, 2)}`;
+                    formResult.className = 'result success';
+                } else {
+                    const errorText = await response.text();
+                    formResult.textContent = `✗ Failed to create student\nStatus: ${response.status}\nError: ${errorText}`;
+                    formResult.className = 'result error';
+                }
+            } catch (error) {
+                formResult.textContent = `✗ Error: ${error.message}`;
+                formResult.className = 'result error';
+            }
+        }
+
+        async function testSchemaValidation() {
+            try {
+                // Test by trying to get student details and checking for proper JOIN
+                const response = await fetch(`${API_BASE}/students`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        const student = data.data[0];
+                        
+                        // Check if we have both user data (name, email) and student data (tingkat, kelas)
+                        const hasUserFields = student.name && student.email;
+                        const hasStudentFields = student.tingkat && student.kelas;
+                        const hasProperStructure = student.studentId && (student.id || student.studentId);
+                        
+                        if (hasUserFields && hasStudentFields && hasProperStructure) {
+                            updateStatus('schema-check', 'success', 
+                                `✓ Normalized schema working correctly\n- User data: ✓ (name, email)\n- Student data: ✓ (tingkat, kelas)\n- Proper JOIN: ✓`);
+                        } else {
+                            updateStatus('schema-check', 'error', 
+                                `✗ Schema validation failed\n- User data: ${hasUserFields ? '✓' : '✗'}\n- Student data: ${hasStudentFields ? '✓' : '✗'}\n- Structure: ${hasProperStructure ? '✓' : '✗'}`);
+                        }
+                    } else {
+                        updateStatus('schema-check', 'warning', '⚠ No data to validate schema');
+                    }
+                } else {
+                    updateStatus('schema-check', 'error', `✗ Schema validation failed: ${response.status}`);
+                }
+            } catch (error) {
+                updateStatus('schema-check', 'error', `✗ Schema validation error: ${error.message}`);
+            }
+        }
+
+        async function testJoinQueries() {
+            try {
+                // Test different query scenarios
+                const tests = [
+                    { url: `${API_BASE}/students`, desc: 'List all students' },
+                    { url: `${API_BASE}/students?searchQuery=Student`, desc: 'Search students' },
+                    { url: `${API_BASE}/students?academicStatus=good`, desc: 'Filter by status' }
+                ];
+
+                let results = [];
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(test.url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            results.push(`✓ ${test.desc}: ${data.data ? data.data.length : 0} records`);
+                        } else {
+                            results.push(`✗ ${test.desc}: Failed (${response.status})`);
+                        }
+                    } catch (e) {
+                        results.push(`✗ ${test.desc}: Error (${e.message})`);
+                    }
+                }
+
+                const allPassed = results.every(r => r.startsWith('✓'));
+                updateStatus('join-test', allPassed ? 'success' : 'error', 
+                    `JOIN Query Tests:\n${results.join('\n')}`);
+            } catch (error) {
+                updateStatus('join-test', 'error', `✗ JOIN test error: ${error.message}`);
+            }
+        }
+
+        async function runFullWorkflowTest() {
+            const workflowResult = document.getElementById('workflow-result');
+            workflowResult.textContent = 'Running full workflow test...';
+            workflowResult.className = 'result loading';
+
+            try {
+                // Step 1: Create a student
+                const testStudentId = 'WORKFLOW' + Date.now();
+                const studentData = {
+                    name: 'Workflow Test Student',
+                    email: `workflow.${Date.now()}@school.edu`,
+                    studentId: testStudentId,
+                    tingkat: 'XII',
+                    kelas: 'IPS-1',
+                    academicStatus: 'good',
+                    avatar: ''
+                };
+
+                const createResponse = await fetch(`${API_BASE}/students`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentData)
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error(`Create failed: ${createResponse.status}`);
+                }
+
+                const created = await createResponse.json();
+
+                // Step 2: Fetch the student back
+                const fetchResponse = await fetch(`${API_BASE}/students/${created.id}`);
+                if (!fetchResponse.ok) {
+                    throw new Error(`Fetch failed: ${fetchResponse.status}`);
+                }
+
+                const fetched = await fetchResponse.json();
+
+                // Step 3: Update the student
+                const updateData = { ...studentData, name: 'Updated Workflow Student' };
+                const updateResponse = await fetch(`${API_BASE}/students/${created.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error(`Update failed: ${updateResponse.status}`);
+                }
+
+                const updated = await updateResponse.json();
+
+                workflowResult.textContent = `✓ Full workflow test passed!
+1. ✓ Created student: ${created.name} (ID: ${created.id})
+2. ✓ Fetched student: ${fetched.name}
+3. ✓ Updated student: ${updated.name}
+
+All CRUD operations working with normalized schema!`;
+                workflowResult.className = 'result success';
+
+            } catch (error) {
+                workflowResult.textContent = `✗ Workflow test failed: ${error.message}`;
+                workflowResult.className = 'result error';
+            }
+        }
+
+        // Run tests on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Starting integration tests...');
+            
+            // Run backend tests
+            await testBackendConnection();
+            await testStudentsAPI();
+            await testCreateStudentAPI();
+            
+            // Run schema tests
+            await testSchemaValidation();
+            await testJoinQueries();
+            
+            console.log('Integration tests completed');
+        });
+    </script>
+</body>
+</html>

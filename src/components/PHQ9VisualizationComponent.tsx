@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Brain, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
-// Import directly instead of using require
-import { usePHQ9ML as useActualPHQ9ML } from './PHQ9MachineLearningProvider';
 
-// Define interfaces since the provider might not exist yet
+// Define interfaces for the component
 interface PHQ9Assessment {
   id: string;
   score: number;
   date: string;
+  risk?: 'low' | 'moderate' | 'high';
   responses?: {
     questionId: number;
     answer: number;
@@ -22,11 +21,14 @@ interface MLPrediction {
   recommendedInterventions: string[];
 }
 
-// Fallback ML hooks in case the provider doesn't exist
+interface PHQ9VisualizationProps {
+  assessments: PHQ9Assessment[];
+  className?: string;
+}
+
+// Mock ML hook since recharts is not available
 const useMockPHQ9ML = () => {
-  
   const resetModel = () => {};
-  
   
   const getPrediction = (): MLPrediction => {
     return {
@@ -43,23 +45,6 @@ const useMockPHQ9ML = () => {
   };
 };
 
-// Use a function to get the appropriate hook
-const getMLHook = () => {
-  // Check if the imported hook exists and return it or return mock
-  if (typeof useActualPHQ9ML === 'function') {
-    return useActualPHQ9ML;
-  }
-  return useMockPHQ9ML;
-};
-
-// Get the appropriate hook
-const usePHQ9ML = getMLHook();
-
-interface PHQ9VisualizationProps {
-  assessments: PHQ9Assessment[];
-  className?: string;
-}
-
 // PHQ-9 severity levels
 const PHQ9_SEVERITY = [
   { range: [0, 4], level: 'minimal', color: 'bg-green-100 text-green-800' },
@@ -69,23 +54,20 @@ const PHQ9_SEVERITY = [
   { range: [20, 27], level: 'severe', color: 'bg-red-100 text-red-800' }
 ];
 
-export default function PHQ9VisualizationComponent({ 
-  assessments,
-  className = ''
-}: PHQ9VisualizationProps) {
-  // Use the actual or mock ML provider
-  const phq9ML = usePHQ9ML();
+const PHQ9VisualizationComponent: React.FC<PHQ9VisualizationProps> = ({ assessments, className = '' }) => {
   const [prediction, setPrediction] = useState<MLPrediction | null>(null);
+  const phq9ML = useMockPHQ9ML();
   
   useEffect(() => {
     try {
-      // Reset the model
       phq9ML.resetModel();
+      const mlPrediction = phq9ML.getPrediction();
+      setPrediction(mlPrediction);
     } catch (error) {
       console.error("Error with ML predictions:", error);
       setPrediction(null);
     }
-  }, [assessments, phq9ML]);
+  }, [assessments]);
   
   // Get severity level for a score
   const getSeverityLevel = (score: number) => {
@@ -126,7 +108,7 @@ export default function PHQ9VisualizationComponent({
         )}
       </div>
       
-      {/* Score Visualization */}
+      {/* Simple Score Visualization */}
       <div className="mb-6">
         <div className="relative h-40 mt-4">
           {/* Score lines and points */}
@@ -145,19 +127,6 @@ export default function PHQ9VisualizationComponent({
                     marginLeft: index === 0 ? '0' : '0'
                   }}
                 >
-                  {/* Line to next point */}
-                  {index < sortedAssessments.length - 1 && (
-                    <div 
-                      className="absolute h-0.5 bg-gray-300 z-0" 
-                      style={{
-                        width: `${itemWidth}`,
-                        bottom: `${(assessment.score / maxScore) * 100}%`,
-                        left: `${(index / (sortedAssessments.length - 1)) * 100}%`,
-                        transform: 'translateY(-50%)',
-                      }}
-                    />
-                  )}
-                  
                   {/* Data point */}
                   <div 
                     className="absolute z-10"
@@ -278,6 +247,31 @@ export default function PHQ9VisualizationComponent({
           </div>
         </div>
       )}
+
+      {/* Assessment Summary */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Assessment Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="text-2xl font-bold text-gray-800">{assessments.length}</div>
+            <div className="text-sm text-gray-600">Total Assessments</div>
+          </div>
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="text-2xl font-bold text-gray-800">
+              {assessments.length > 0 ? Math.round(assessments.reduce((sum, a) => sum + a.score, 0) / assessments.length) : 0}
+            </div>
+            <div className="text-sm text-gray-600">Average Score</div>
+          </div>
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="text-2xl font-bold text-gray-800">
+              {assessments.length > 0 ? assessments[assessments.length - 1].score : 0}
+            </div>
+            <div className="text-sm text-gray-600">Latest Score</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
+export default PHQ9VisualizationComponent;

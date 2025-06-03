@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, HelpCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HelpCircle, XCircle, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { cn } from '../utils/cn';
 
@@ -109,13 +109,83 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{[key: number]: number}>({});
   const [showConfirmExit, setShowConfirmExit] = useState(false);
+  const [showIntroduction, setShowIntroduction] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [countdownTimer, setCountdownTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Fullscreen functions
+  const enterFullscreen = () => {
+    const element = document.documentElement;
+    if (element.requestFullscreen) {
+      element.requestFullscreen().catch(err => {
+        console.log('Error attempting to enable fullscreen:', err);
+      });
+    } else if ((element as any).webkitRequestFullscreen) {
+      (element as any).webkitRequestFullscreen();
+    } else if ((element as any).msRequestFullscreen) {
+      (element as any).msRequestFullscreen();
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => {
+        console.log('Error attempting to exit fullscreen:', err);
+      });
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen();
+    }
+  };
+
+  // Handle fullscreen on component mount/unmount
+  useEffect(() => {
+    return () => {
+      // Always exit fullscreen when component unmounts
+      exitFullscreen();
+    };
+  }, []);
 
   // Calculate progress
   useEffect(() => {
     const answeredQuestions = Object.keys(answers).length;
     setProgress((answeredQuestions / mbtiQuestions.length) * 100);
   }, [answers]);
+  
+  // Clear countdown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+      }
+    };
+  }, [countdownTimer]);
+  
+  // Handle countdown logic
+  useEffect(() => {
+    if (countdown === null) return;
+    
+    if (countdown === 0) {
+      // Auto-advance to next question
+      if (currentQuestion < mbtiQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      }
+      setCountdown(null);
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        setCountdownTimer(null);
+      }
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      setCountdown(prev => prev! - 1);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [countdown, currentQuestion, countdownTimer]);
 
   const handleAnswer = (questionId: number, value: number) => {
     setAnswers(prev => ({
@@ -123,21 +193,50 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
       [questionId]: value
     }));
     
-    // Auto-advance to next question
+    // Clear any existing countdown
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    
+    // Start countdown if not the last question
     if (currentQuestion < mbtiQuestions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+      setCountdown(3);
     }
   };
 
   const handleNext = () => {
     if (currentQuestion < mbtiQuestions.length - 1) {
+      // Clear countdown when manually navigating
+      setCountdown(null);
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        setCountdownTimer(null);
+      }
       setCurrentQuestion(currentQuestion + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
+      // Clear countdown when manually navigating
+      setCountdown(null);
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        setCountdownTimer(null);
+      }
       setCurrentQuestion(currentQuestion - 1);
+    }
+  };
+  
+  const skipCountdown = () => {
+    setCountdown(null);
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    if (currentQuestion < mbtiQuestions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
     }
   };
 
@@ -207,6 +306,16 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
     };
   };
 
+  const handleComplete = (result: MbtiResult) => {
+    exitFullscreen();
+    onComplete(result);
+  };
+
+  const handleCancel = () => {
+    exitFullscreen();
+    onCancel();
+  };
+
   const handleSubmit = () => {
     // Check if all questions are answered
     if (Object.keys(answers).length < mbtiQuestions.length) {
@@ -216,7 +325,13 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
     }
     
     const result = calculateResults();
-    onComplete(result);
+    handleComplete(result);
+  };
+
+  const handleStartAssessment = () => {
+    setShowIntroduction(false);
+    // Enter fullscreen when starting assessment
+    enterFullscreen();
   };
 
   const handleConfirmCancel = () => {
@@ -224,28 +339,346 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
   };
 
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 lg:px-8">
-      {showConfirmExit ? (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            {t('mbti.confirmExit', 'Yakin ingin keluar?')}
-          </h2>
-          <p className="text-gray-600 mb-6">
-            {t('mbti.exitWarning', 'Jawaban Anda tidak akan disimpan. Apakah Anda yakin ingin keluar dari penilaian ini?')}
-          </p>
-          <div className="flex space-x-4">
+    <div className="container mx-auto max-w-7xl py-4 sm:py-8 px-4 sm:px-6 lg:px-8">
+      {showIntroduction ? (
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-8 py-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-white">
+                {t('mbti.title', 'Penilaian Kepribadian MBTI')}
+              </h1>
+              <button
+                onClick={handleCancel}
+                className="text-white/80 hover:text-white"
+                aria-label="Close"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <p className="text-indigo-100 mt-2">
+              {t('mbti.subtitle', 'Myers-Briggs Type Indicator - Temukan Tipe Kepribadian Anda')}
+            </p>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid lg:grid-cols-2 gap-8 p-8">
+            {/* Left Column */}
+            <div className="space-y-8">
+              {/* About the Assessment */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-indigo-100 rounded-full p-2 mr-3">
+                    <HelpCircle className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  {t('mbti.intro.aboutTitle', 'Tentang Penilaian MBTI')}
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+                  <p className="text-gray-700 leading-relaxed">
+                    {t('mbti.intro.description', 'MBTI (Myers-Briggs Type Indicator) adalah instrumen penilaian kepribadian yang mengidentifikasi preferensi psikologis Anda dalam empat dimensi utama. Hasil tes ini akan membantu Anda memahami cara Anda memproses informasi, membuat keputusan, dan berinteraksi dengan dunia.')}
+                  </p>
+                  <div className="bg-white rounded-lg p-5 border border-gray-200">
+                    <h4 className="font-medium text-gray-900 mb-3">{t('mbti.intro.dimensions', 'Empat Dimensi MBTI:')}</h4>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span><strong>Extraversion (E) vs Introversion (I)</strong> - Sumber energi dan fokus perhatian</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span><strong>Sensing (S) vs Intuition (N)</strong> - Cara mengumpulkan informasi</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span><strong>Thinking (T) vs Feeling (F)</strong> - Cara membuat keputusan</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-500 mr-2">•</span>
+                        <span><strong>Judging (J) vs Perceiving (P)</strong> - Gaya hidup dan struktur</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assessment Details */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-blue-100 rounded-full p-2 mr-3">
+                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                  </div>
+                  {t('mbti.intro.detailsTitle', 'Detail Penilaian')}
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">60</div>
+                    <div className="text-sm text-blue-800 font-medium">{t('mbti.intro.questions', 'Pertanyaan')}</div>
+                    <div className="text-xs text-blue-600 mt-1">15 per dimensi</div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-green-600 mb-1">15-20</div>
+                    <div className="text-sm text-green-800 font-medium">{t('mbti.intro.minutes', 'Menit')}</div>
+                    <div className="text-xs text-green-600 mt-1">Estimasi waktu</div>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-purple-600 mb-1">1-7</div>
+                    <div className="text-sm text-purple-800 font-medium">{t('mbti.intro.scale', 'Skala Penilaian')}</div>
+                    <div className="text-xs text-purple-600 mt-1">Likert scale</div>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-orange-600 mb-1">16</div>
+                    <div className="text-sm text-orange-800 font-medium">Tipe Hasil</div>
+                    <div className="text-xs text-orange-600 mt-1">Kemungkinan</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms and Conditions */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-yellow-100 rounded-full p-2 mr-3">
+                    <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  {t('mbti.intro.termsTitle', 'Syarat dan Ketentuan')}
+                </h2>
+                <div className="bg-yellow-50 rounded-lg p-5 border border-yellow-200">
+                  <ul className="space-y-3 text-gray-700 text-sm">
+                    <li className="flex items-start">
+                      <span className="text-yellow-600 mr-2 mt-0.5">•</span>
+                      <span>{t('mbti.intro.term1', 'Jawab semua pertanyaan dengan jujur berdasarkan preferensi alami Anda, bukan bagaimana Anda "seharusnya" menjawab.')}</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-600 mr-2 mt-0.5">•</span>
+                      <span>{t('mbti.intro.term2', 'Tidak ada jawaban yang benar atau salah. Setiap jawaban mencerminkan preferensi pribadi Anda.')}</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-600 mr-2 mt-0.5">•</span>
+                      <span>{t('mbti.intro.term3', 'Hasil penilaian bersifat indikatif dan tidak menentukan kemampuan atau membatasi pilihan karir Anda.')}</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-600 mr-2 mt-0.5">•</span>
+                      <span>{t('mbti.intro.term4', 'Data dan jawaban Anda akan disimpan secara anonim untuk keperluan analisis dan peningkatan layanan.')}</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-yellow-600 mr-2 mt-0.5">•</span>
+                      <span>{t('mbti.intro.term5', 'Setiap pertanyaan memiliki timer otomatis 3 detik. Anda dapat mengubah jawaban sebelum waktu habis.')}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-8">
+              {/* Results Preview */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-green-100 rounded-full p-2 mr-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  {t('mbti.intro.results', 'Anda Akan Mendapat:')}
+                </h2>
+                <div className="bg-white rounded-lg p-5 border border-gray-200 space-y-3">
+                  <div className="flex items-start">
+                    <span className="text-green-500 mr-3 mt-0.5">✓</span>
+                    <div>
+                      <strong className="text-gray-900">Tipe kepribadian Anda</strong>
+                      <p className="text-sm text-gray-600">Salah satu dari 16 tipe MBTI (contoh: INTJ, ENFP)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-green-500 mr-3 mt-0.5">✓</span>
+                    <div>
+                      <strong className="text-gray-900">Analisis mendalam</strong>
+                      <p className="text-sm text-gray-600">Kekuatan, area pengembangan, dan karakteristik unik</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-green-500 mr-3 mt-0.5">✓</span>
+                    <div>
+                      <strong className="text-gray-900">Rekomendasi karir</strong>
+                      <p className="text-sm text-gray-600">Profesi yang cocok dengan tipe kepribadian Anda</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-green-500 mr-3 mt-0.5">✓</span>
+                    <div>
+                      <strong className="text-gray-900">Gaya belajar optimal</strong>
+                      <p className="text-sm text-gray-600">Pendekatan pembelajaran yang paling efektif</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-green-500 mr-3 mt-0.5">✓</span>
+                    <div>
+                      <strong className="text-gray-900">Kompatibilitas hubungan</strong>
+                      <p className="text-sm text-gray-600">Tipe kepribadian yang cocok untuk kerjasama</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-indigo-100 rounded-full p-2 mr-3">
+                    <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  {t('mbti.intro.instructionsTitle', 'Petunjuk Pengerjaan')}
+                </h2>
+                <div className="bg-indigo-50 rounded-lg p-5 border border-indigo-200">
+                  <ol className="space-y-4 text-gray-700 text-sm">
+                    <li className="flex items-start">
+                      <span className="bg-indigo-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">1</span>
+                      <div>
+                        <strong>Baca dengan cermat</strong>
+                        <p className="text-gray-600 mt-1">Pahami setiap pernyataan sebelum memberikan jawaban</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-indigo-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">2</span>
+                      <div>
+                        <strong>Skala 1-7</strong>
+                        <p className="text-gray-600 mt-1">1 = Sangat Tidak Setuju, 7 = Sangat Setuju</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-indigo-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">3</span>
+                      <div>
+                        <strong>Jawab sesuai insting</strong>
+                        <p className="text-gray-600 mt-1">Hindari overthinking, ikuti preferensi alami Anda</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-indigo-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">4</span>
+                      <div>
+                        <strong>Navigasi fleksibel</strong>
+                        <p className="text-gray-600 mt-1">Gunakan tombol untuk maju mundur antar pertanyaan</p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              {/* Sample Questions Preview */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-purple-100 rounded-full p-2 mr-3">
+                    <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  Contoh Pertanyaan
+                </h2>
+                <div className="bg-purple-50 rounded-lg p-5 border border-purple-200 space-y-4">
+                  <div className="bg-white rounded-lg p-4 border border-purple-100">
+                    <p className="text-sm text-gray-700 italic mb-2">"Saya menikmati menjadi pusat perhatian dalam acara sosial."</p>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Sangat Tidak Setuju</span>
+                      <span>Sangat Setuju</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      {[1,2,3,4,5,6,7].map(num => (
+                        <div key={num} className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          {num}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border border-purple-100">
+                    <p className="text-sm text-gray-700 italic mb-2">"Saya lebih fokus pada fakta konkret daripada teori abstrak."</p>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Sangat Tidak Setuju</span>
+                      <span>Sangat Setuju</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      {[1,2,3,4,5,6,7].map(num => (
+                        <div key={num} className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          {num}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 p-8 pt-4 border-t border-gray-200">
             <button
-              onClick={() => setShowConfirmExit(false)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors"
+              onClick={handleStartAssessment}
+              className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-4 px-8 rounded-lg transition-all duration-200 flex items-center justify-center text-lg"
             >
-              {t('mbti.continue', 'Lanjutkan Penilaian')}
+              <CheckCircle className="h-6 w-6 mr-3" />
+              {t('mbti.intro.startButton', 'Mulai Penilaian MBTI')}
             </button>
             <button
-              onClick={onCancel}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              onClick={handleCancel}
+              className="sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-4 px-8 rounded-lg transition-colors duration-200"
             >
-              {t('mbti.exit', 'Keluar')}
+              {t('mbti.intro.cancelButton', 'Batal')}
             </button>
+          </div>
+        </div>
+      ) : showConfirmExit ? (
+        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8 max-w-2xl mx-auto">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100">
+                <svg className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-3 sm:ml-4 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-4">
+                {t('mbti.confirmExit', 'Yakin ingin keluar?')}
+              </h2>
+              <div className="space-y-3 sm:space-y-4">
+                <p className="text-sm sm:text-base text-gray-600">
+                  {t('mbti.exitWarning', 'Jawaban Anda tidak akan disimpan. Apakah Anda yakin ingin keluar dari penilaian ini?')}
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-2 sm:ml-3">
+                      <h3 className="text-xs sm:text-sm font-medium text-red-800">
+                        {t('mbti.dataLossWarning', 'Data akan hilang')}
+                      </h3>
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-red-700">
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>{Object.keys(answers).length} jawaban yang sudah diisi akan hilang</li>
+                          <li>Progress {Math.round(progress)}% akan dikosongkan</li>
+                          <li>Anda harus memulai dari awal jika ingin mengulang</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
+                <button
+                  onClick={() => setShowConfirmExit(false)}
+                  className="flex-1 px-4 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm sm:text-base font-medium"
+                >
+                  {t('mbti.continue', 'Lanjutkan Penilaian')}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 px-4 py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors text-sm sm:text-base font-medium"
+                >
+                  {t('mbti.exit', 'Keluar')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -264,7 +697,7 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
           </div>
 
           <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
-            <div className="p-6">
+            <div className="p-6 relative">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {t('mbti.progress', 'Kemajuan')}: {Math.round(progress)}%
@@ -296,22 +729,63 @@ export default function MbtiAssessment({ onComplete, onCancel }: MbtiAssessmentP
                   </div>
 
                   {[1, 2, 3, 4, 5, 6, 7].map((value) => (
-                    <button
-                      key={value}
-                      onClick={() => handleAnswer(mbtiQuestions[currentQuestion].id, value)}
-                      className={cn(
-                        "h-12 w-12 rounded-full flex items-center justify-center",
-                        answers[mbtiQuestions[currentQuestion].id] === value
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                    <div key={value} className="flex flex-col items-center relative">
+                      <button
+                        onClick={() => handleAnswer(mbtiQuestions[currentQuestion].id, value)}
+                        className={cn(
+                          "h-12 w-12 rounded-full flex items-center justify-center relative z-10",
+                          answers[mbtiQuestions[currentQuestion].id] === value
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        )}
+                      >
+                        {value}
+                      </button>
+                      
+                      {/* Circular Countdown Progress - Only show around selected answer */}
+                      {countdown !== null && answers[mbtiQuestions[currentQuestion].id] === value && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="h-14 w-14 -rotate-90 transform transition-transform duration-300 ease-out" viewBox="0 0 56 56">
+                            {/* Background circle */}
+                            <circle
+                              cx="28"
+                              cy="28"
+                              r="26"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              fill="none"
+                              className="text-indigo-100"
+                            />
+                            {/* Progress circle */}
+                            <circle
+                              cx="28"
+                              cy="28"
+                              r="26"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 26}`}
+                              strokeDashoffset={`${2 * Math.PI * 26 * (countdown / 3)}`}
+                              className="text-indigo-600 transition-all duration-[950ms] ease-linear"
+                              style={{
+                                strokeLinecap: 'round',
+                                transformOrigin: 'center'
+                              }}
+                            />
+                          </svg>
+                          {/* Countdown text with smoother animation */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xs text-indigo-700 font-bold bg-white/95 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center shadow-sm border border-indigo-100 transition-all duration-200 ease-out transform scale-100 hover:scale-105">
+                              {countdown}
+                            </span>
+                          </div>
+                        </div>
                       )}
-                    >
-                      {value}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
-
+              
               <div className="flex justify-between mt-8">
                 <button
                   onClick={handlePrevious}

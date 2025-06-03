@@ -301,9 +301,9 @@ export default function PHQ9TestPage() {
   };
   
   // Save test results and go back to main page
-  const saveAndReturn = () => {
+  const saveAndReturn = async () => {
     const totalScore = calculateScore();
-    const risk = totalScore < 10 ? 'low' : totalScore < 15 ? 'moderate' : 'high';
+    const risk: 'low' | 'moderate' | 'high' = totalScore < 10 ? 'low' : totalScore < 15 ? 'moderate' : 'high';
     
     // Create trend prediction
     let trend: 'improving' | 'stable' | 'worsening';
@@ -315,8 +315,8 @@ export default function PHQ9TestPage() {
     const analysisNotes = generateAnalysisNotes(totalScore, responses.map(r => (r >= 0 ? r : 0)));
     const recommendations = generateRecommendations(totalScore, responses.map(r => (r >= 0 ? r : 0)));
     
-    // Save the test data to the assessment context
-    addAssessment({
+    // Create complete assessment object
+    const assessmentData = {
       type: 'PHQ-9',
       score: totalScore,
       date: format(new Date(), 'yyyy-MM-dd'),
@@ -332,16 +332,25 @@ export default function PHQ9TestPage() {
         nextPredictedScore: Math.max(0, totalScore + (trend === 'improving' ? -2 : trend === 'stable' ? 0 : 2))
       },
       recommendations
-    });
+    };
     
-    console.log('Test completed and saved to local storage');
-    console.log('Navigating to mental health page');
+    console.log('PHQ9 Test completed, saving assessment:', assessmentData);
     
     try {
-      navigate('/mental-health', { replace: true });
+      // Save the test data to the assessment context (which will save to database)
+      await addAssessment(assessmentData);
+      
+      console.log('PHQ9 Assessment saved successfully to database');
+        // Navigate to mental health page
+      navigate('/app/mental-health', { replace: true });
     } catch (error) {
-      console.error('Navigation error:', error);
-      window.location.href = '/mental-health';
+      console.error('Error saving PHQ9 assessment:', error);
+      
+      // Still navigate but show error message
+      navigate('/app/mental-health', {
+        replace: true,
+        state: { error: 'Assessment completed but could not be saved to database. It has been saved locally.' }
+      });
     }
   };
 
@@ -484,10 +493,9 @@ export default function PHQ9TestPage() {
                     <p className="text-xs text-indigo-600">{getCompletionTimeText()}</p>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 w-full mb-4">
+                  <div className="grid grid-cols-2 gap-4 w-full mb-4">
                   <Link
-                    to="/mental-health"
+                    to="/app/mental-health"
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 flex items-center justify-center"
                   >
                     {t('phq9.skipResults', 'Skip Results')}
@@ -568,10 +576,9 @@ export default function PHQ9TestPage() {
                   </span>
                   <span className="text-sm text-gray-500 ml-2">
                     {t('phq9.questionNumber', 'Question')} {currentQuestionIndex + 1} {t('phq9.of', 'of')} {PHQ9_QUESTIONS.length}
-                  </span>
-                </div>
+                  </span>                </div>
                 <Link 
-                  to="/mental-health"
+                  to="/app/mental-health"
                   className="text-sm text-gray-500 hover:text-gray-700"
                 >
                   {t('phq9.exit', 'Exit')}
@@ -665,10 +672,9 @@ export default function PHQ9TestPage() {
 
 // Corrected wrapper component that doesn't use Layout directly
 export function PHQ9TestWithNavigation() {
-  return (
-    <div className="flex h-screen bg-gray-100">
+  return (    <div className="flex h-screen bg-gray-100">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-light">
           <PHQ9TestPage />
         </div>
       </div>

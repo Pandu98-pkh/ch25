@@ -52,7 +52,7 @@ export default function SettingsPage() {
                 </span>
               </div>
               <button
-                onClick={() => navigate('/user-management')}
+                onClick={() => navigate('/app/user-management')}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
               >
                 {t('settings.goToUserManagement', 'Go to User Management')}

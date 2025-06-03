@@ -568,12 +568,11 @@ export default function CoursePage() {
   }
   
   if (!course) {
-    return (
-      <div className="text-center py-16">
+    return (      <div className="text-center py-16">
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">{t('course.notFound')}</h2>
         <p className="text-gray-600 mb-6">{t('course.notFoundDescription')}</p>
         <button
-          onClick={() => navigate('/career')}
+          onClick={() => navigate('/app/career')}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -613,9 +612,8 @@ export default function CoursePage() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="relative h-48 bg-gray-200">
           <div className="absolute inset-0 bg-gradient-to-r from-brand-600/80 to-brand-800/80 flex items-center p-8">
-            <div>
-              <button
-                onClick={() => navigate('/career')}
+            <div>              <button
+                onClick={() => navigate('/app/career')}
                 className="inline-flex items-center text-sm font-medium text-white mb-4 hover:underline"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />

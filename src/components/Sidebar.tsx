@@ -7,45 +7,44 @@ import { useUser } from '../contexts/UserContext';
 function Sidebar() {
   const { t } = useLanguage();
   const { user } = useUser();
-
   // IMPORTANT: Hard-coded basic navigation items without translation to ensure they're visible
   const allNavItems = [
     // These must be visible for all users
     {
       icon: User,
       label: "Profile", // No translation to ensure it's visible
-      href: '/profile',
+      href: '/app/profile',
     },
     {
       icon: Settings,
       label: "Settings", // No translation to ensure it's visible 
-      href: '/settings',
+      href: '/app/settings',
     },
     // Other menu items
     {
       icon: Home,
       label: t('navigation.dashboard'), // Fixed: removed second argument
-      href: '/',
+      href: '/app',
     },
     {
       icon: Users,
       label: t('navigation.students'), // Fixed: removed second argument
-      href: '/students',
+      href: '/app/students',
     },
     {
       icon: BookOpen,
       label: t('navigation.courses'), // Fixed: removed second argument
-      href: '/courses',
+      href: '/app/courses',
     },
     {
       icon: BarChart,
       label: t('navigation.reports'), // Fixed: removed second argument
-      href: '/reports',
+      href: '/app/reports',
     },
     {
       icon: Calendar,
       label: t('navigation.calendar'), // Fixed: removed second argument
-      href: '/calendar',
+      href: '/app/calendar',
     },
   ];
 

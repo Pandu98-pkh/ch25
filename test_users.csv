@@ -1,0 +1,4 @@
+name,email,role,username,userId
+John Doe,john.doe@test.com,student,johndoe,
+Jane Smith,jane.smith@test.com,counselor,janesmith,
+Alice Johnson,alice.johnson@test.com,admin,alicejohnson,

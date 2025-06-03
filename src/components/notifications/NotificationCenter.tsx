@@ -61,7 +61,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         </button>
       </div>
       
-      <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+      <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto scrollbar-light">
         {notifications.length === 0 ? (
           <div className="p-8 text-center">
             <Bell className="h-10 w-10 text-gray-300 mx-auto mb-3" />

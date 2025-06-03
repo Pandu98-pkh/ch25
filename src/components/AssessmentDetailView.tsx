@@ -140,10 +140,9 @@ export default function AssessmentDetailView({ assessment, onClose }: Assessment
   const severityColor = getSeverityColor(severity);
   const riskColor = getRiskColor(assessment.risk);
   const maxScore = getMaxScore(assessment.type);
-
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-auto scrollbar-light">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn relative scrollbar-light">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 text-white flex justify-between items-center">
           <div className="flex items-center">

@@ -1,11 +1,16 @@
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Camera, Save, X, Shield, Award, CalendarCheck, BookOpen, Target } from 'lucide-react';
+import { Save, X, Shield, Award, CalendarCheck, BookOpen, Target } from 'lucide-react';
 import { User as UserType } from '../types';
 import { toast } from '../utils/toast';
+import { ImageUploader } from './ImageUploader';
 
 // Extend the User type with role-specific fields
 interface ExtendedUser extends UserType {
+  username?: string;
+  avatar?: string;
+  avatarType?: 'base64' | 'file' | 'url';
+  avatarFilename?: string;
   // Admin fields
   systemAccess?: string;
   // Counselor fields
@@ -29,10 +34,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
   const { t } = useLanguage();
   // Cast user to ExtendedUser to access the role-specific fields
   const extendedUser = user as ExtendedUser;
-  
-  const [name, setName] = useState(user.name || '');
+    const [name, setName] = useState(user.name || '');
   const [email, setEmail] = useState(user.email || '');
-  const [photo, setPhoto] = useState<string | null>(user.photo || null);
+  const [username, setUsername] = useState(user.username || '');  const [photo, setPhoto] = useState<string | null>(user.photo || null);
+  const [avatarType, setAvatarType] = useState<'base64' | 'file' | 'url'>('url');
+  const [avatarFilename, setAvatarFilename] = useState<string | undefined>(undefined);
   
   // Admin specific fields
   const [systemAccess, setSystemAccess] = useState(extendedUser.systemAccess || 'Full Access');
@@ -48,34 +54,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
   const [className, setClassName] = useState(extendedUser.kelas || '');
   const [interests, setInterests] = useState(extendedUser.interests || '');
   const [careerGoals, setCareerGoals] = useState(extendedUser.careerGoals || '');
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image size should be less than 2MB');
-      return;
-    }
-
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setPhoto(event.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+  
+  const handleImageChange = (imageData: {
+    type: 'base64' | 'file' | 'url';
+    url: string;
+    filename?: string;
+  }) => {
+    setPhoto(imageData.url);
+    setAvatarType(imageData.type);
+    setAvatarFilename(imageData.filename);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,11 +71,19 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
     setIsSubmitting(true);
 
     try {
-      // Create the base update data
+      // Validate username hasn't been changed if user already exists
+      if (user.userId && user.username && username !== user.username) {
+        throw new Error('Username cannot be modified after account creation');
+      }      // Create the base update data
       const updateData: Partial<ExtendedUser> = {
         name,
         email,
-        photo
+        photo: photo || undefined,
+        avatar: photo || undefined, // Also update avatar field for consistency
+        avatarType,
+        avatarFilename,
+        username,
+        userId: user.userId // Keep the original userId, don't allow changes
       };
       
       // Add role-specific data to the update
@@ -104,8 +100,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
         updateData.interests = interests;
         updateData.careerGoals = careerGoals;
       }
-      
-      await onUpdate(updateData as Partial<UserType>);
+        await onUpdate(updateData as Partial<UserType>);
       toast.success(t('profile.profileUpdated'));
     } catch (error) {
       toast.error((error as Error).message || 'Failed to update profile');
@@ -114,71 +109,29 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
   return (
     <div className="bg-white shadow-md rounded-lg p-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
         {t('profile.customizeYourProfile')}
       </h2>
       
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Profile photo section */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="relative">
-            <div className="h-32 w-32 rounded-full bg-white border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
-              {photo ? (
-                <img src={photo} alt={name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-indigo-100">
-                  <span className="text-indigo-600 text-4xl font-bold">
-                    {name ? name.charAt(0).toUpperCase() : 'U'}
-                  </span>
-                </div>
-              )}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoChange}
-              accept="image/*"
-              className="hidden"
-              aria-label={t('profile.changePhoto')}
-            />
-            <button
-              type="button"
-              onClick={triggerFileInput}
-              className="absolute bottom-1 right-1 bg-indigo-600 text-white rounded-full p-2 shadow-lg hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              aria-label={t('profile.changePhoto')}
-            >
-              <Camera className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="text-center sm:text-left">
-            <h3 className="text-xl font-semibold text-gray-800">
-              {t('profile.visualIdentity')}
-            </h3>
-            <p className="text-sm text-gray-500 mt-1 max-w-xs">
-              {t('profile.photoDescription')}
-            </p>
-            <button 
-              type="button" 
-              onClick={triggerFileInput}
-              className="mt-3 inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-transparent rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {t('profile.uploadPhoto')}
-            </button>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-8">        {/* Profile photo section */}
+        <div className="p-6 bg-gray-50 rounded-lg border border-gray-100">          <h3 className="text-lg font-medium text-gray-800 mb-4">
+            {t('profile.visualIdentity')}
+          </h3>
+          <ImageUploader
+            currentImage={photo || ''}
+            onImageChange={handleImageChange}
+            label={t('profile.photo', 'Profile Photo')}
+            className="w-full"
+          />
         </div>
 
         {/* Personal information */}
         <div className="border-b border-gray-200 pb-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             {t('profile.aboutYou')}
-          </h3>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          </h3>          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('profile.name')}
@@ -202,6 +155,29 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onUpdate }) 
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 sm:text-sm"
               />
+            </div>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('profile.username')}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                  disabled={!!user.userId} // Disable editing if user already has an ID
+                />
+                {!!user.userId && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-gray-400 text-xs">Non-editable</span>
+                  </div>
+                )}
+              </div>
+              {!!user.userId && (
+                <p className="mt-1 text-xs text-gray-500">Username cannot be changed after account creation.</p>
+              )}
             </div>
           </div>
         </div>

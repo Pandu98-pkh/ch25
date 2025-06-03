@@ -8,6 +8,7 @@ import { Calendar, Brain, GraduationCap, FileText } from 'lucide-react';
 // This would come from an API in a real app
 const mockStudent: Student = {
   id: '1',
+  studentId: 'S12345', // Added NIS
   name: 'Student User',
   email: 'student@example.com',
   tingkat: 'XI',
@@ -31,6 +32,7 @@ const mockSessions: CounselingSession[] = [
     notes: 'Discussed academic progress and future career options.',
     type: 'academic',
     outcome: 'positive',
+    approvalStatus: 'approved',
     counselor: {
       id: '2',
       name: 'Dr. Jane Smith'
@@ -44,6 +46,7 @@ const mockSessions: CounselingSession[] = [
     notes: 'Follow-up on career interests.',
     type: 'career',
     outcome: 'neutral',
+    approvalStatus: 'pending',
     counselor: {
       id: '2',
       name: 'Dr. Jane Smith'
@@ -114,10 +117,12 @@ export default function StudentProfile() {
                   </div>
                 )}
               </div>
-            </div>
-            <div className="flex-1">
+            </div>            <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900">{student.name}</h2>
               <div className="mt-1 text-sm text-gray-500">{student.email}</div>
+              <div className="mt-1 text-sm text-gray-500">
+                <span className="font-medium">{t('student.studentId', 'Nomor Induk Siswa')}:</span> {student.studentId || t('student.notAvailable', 'N/A')}
+              </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   {t('student.grade')}: {student.tingkat}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BarChart3, 
   BookOpen, 
   Users, 
   Calendar, 
@@ -19,7 +18,6 @@ import { useUser } from '../contexts/UserContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { getStudents } from '../services/studentService';
 import { getClasses } from '../services/classService';
-import { cn } from '../utils/cn';
 
 interface DashboardStats {
   totalStudents: number;
@@ -271,9 +269,8 @@ export default function Dashboard() {
                 <p className="text-xs font-medium text-gray-500">{t('dashboard.upcomingSessions')}</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.upcomingSessions}</p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/sessions')}
+            </div>            <button 
+              onClick={() => navigate('/app/sessions')}
               className="w-full mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center justify-end"
             >
               {t('dashboard.viewSchedule')}
@@ -290,9 +287,8 @@ export default function Dashboard() {
                 <p className="text-xs font-medium text-gray-500">{t('dashboard.pendingAssessments')}</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.pendingAssessments}</p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/mental-health')}
+            </div>            <button 
+              onClick={() => navigate('/app/mental-health')}
               className="w-full mt-2 text-xs text-purple-600 hover:text-purple-800 flex items-center justify-end"
             >
               {t('dashboard.takeAssessment')}
@@ -314,9 +310,8 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 h-2 w-full bg-gray-200 rounded-full">
               <div className="h-2 rounded-full bg-green-500" style={{ width: '75%' }}></div>
-            </div>
-            <button 
-              onClick={() => navigate('/reports')}
+            </div>            <button 
+              onClick={() => navigate('/app/reports')}
               className="w-full mt-3 text-xs text-green-600 hover:text-green-800 flex items-center justify-end"
             >
               {t('dashboard.viewDetails')}
@@ -406,9 +401,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              
-              <button 
-                onClick={() => navigate('/career')}
+                <button 
+                onClick={() => navigate('/app/career')}
                 className="mt-6 w-full px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg flex items-center justify-center hover:from-teal-600 hover:to-emerald-600 transition-colors"
               >
                 {t('dashboard.exploreCareerOptions')}
@@ -441,14 +435,13 @@ export default function Dashboard() {
           <div className="flex items-center mb-4">
             <div className="p-3 bg-indigo-100 rounded-lg">
               <Users className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div className="ml-4">
+            </div>            <div className="ml-4">
               <p className="text-xs font-medium text-gray-500">{t('dashboard.totalStudents')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalStudents}</p>
             </div>
           </div>
           <button 
-            onClick={() => navigate('/students')}
+            onClick={() => navigate('/app/students')}
             className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
           >
             {t('dashboard.viewAll')}
@@ -467,9 +460,8 @@ export default function Dashboard() {
                 <p className="text-xs font-medium text-gray-500">{t('dashboard.totalClasses')}</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalClasses}</p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/classes')}
+            </div>            <button 
+              onClick={() => navigate('/app/classes')}
               className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
             >
               {t('dashboard.viewAll')}
@@ -489,9 +481,8 @@ export default function Dashboard() {
                 <p className="text-xs font-medium text-gray-500">{t('dashboard.pendingAssessments')}</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.pendingAssessments}</p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/mental-health')}
+            </div>            <button 
+              onClick={() => navigate('/app/mental-health')}
               className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
             >
               {t('dashboard.viewAll')}
@@ -508,10 +499,9 @@ export default function Dashboard() {
             <div className="ml-4">
               <p className="text-xs font-medium text-gray-500">{t('dashboard.upcomingSessions')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats.upcomingSessions}</p>
-            </div>
-          </div>
+            </div>          </div>
           <button 
-            onClick={() => navigate('/sessions')}
+            onClick={() => navigate('/app/sessions')}
             className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
           >
             {t('dashboard.viewAll')}
@@ -528,10 +518,9 @@ export default function Dashboard() {
             <div className="ml-4">
               <p className="text-xs font-medium text-gray-500">{t('dashboard.studentsAtRisk')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats.studentsAtRisk}</p>
-            </div>
-          </div>
+            </div>          </div>
           <button 
-            onClick={() => navigate('/students')}
+            onClick={() => navigate('/app/students')}
             className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
           >
             {t('dashboard.viewAll')}
@@ -552,9 +541,8 @@ export default function Dashboard() {
                   {t('dashboard.viewAdminInsights')}
                 </p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/behavior')}
+            </div>            <button 
+              onClick={() => navigate('/app/behavior')}
               className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
             >
               {t('dashboard.viewAll')}
@@ -576,9 +564,8 @@ export default function Dashboard() {
                   {t('dashboard.manageYourSessions')}
                 </p>
               </div>
-            </div>
-            <button 
-              onClick={() => navigate('/sessions')}
+            </div>            <button 
+              onClick={() => navigate('/app/sessions')}
               className="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center justify-end"
             >
               {t('dashboard.viewSchedule')}
@@ -648,9 +635,8 @@ export default function Dashboard() {
           
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {isAdmin ? (
-              <>
-                <button 
-                  onClick={() => navigate('/students')}
+              <>                <button 
+                  onClick={() => navigate('/app/students')}
                   className="flex items-center justify-between p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -661,9 +647,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-indigo-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/user-management')}
+                  <button 
+                  onClick={() => navigate('/app/user-management')}
                   className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -674,9 +659,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-purple-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/classes')}
+                  <button 
+                  onClick={() => navigate('/app/classes')}
                   className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -687,9 +671,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-green-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/settings')}
+                  <button 
+                  onClick={() => navigate('/app/settings')}
                   className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -701,10 +684,9 @@ export default function Dashboard() {
                   <ArrowRight className="h-4 w-4 text-blue-600" />
                 </button>
               </>
-            ) : (
-              <>
+            ) : (                <>
                 <button 
-                  onClick={() => navigate('/students')}
+                  onClick={() => navigate('/app/students')}
                   className="flex items-center justify-between p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -715,9 +697,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-indigo-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/sessions')}
+                  <button 
+                  onClick={() => navigate('/app/sessions')}
                   className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -728,9 +709,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-blue-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/mental-health')}
+                  <button 
+                  onClick={() => navigate('/app/mental-health')}
                   className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-100 transition-colors"
                 >
                   <div className="flex items-center">
@@ -741,9 +721,8 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-purple-600" />
                 </button>
-                
-                <button 
-                  onClick={() => navigate('/behavior')}
+                  <button 
+                  onClick={() => navigate('/app/behavior')}
                   className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-100 transition-colors"
                 >
                   <div className="flex items-center">

@@ -1,38 +1,33 @@
 // DASS-21 Questions array
 export const DASS21_QUESTIONS = [
-  // Depression items (7)
-  "I couldn't seem to experience any positive feeling at all",
-  "I found it difficult to work up the initiative to do things",
-  "I felt that I had nothing to look forward to",
-  "I felt down-hearted and blue",
-  "I was unable to become enthusiastic about anything",
-  "I felt I wasn't worth much as a person",
-  "I felt that life was meaningless",
-  
-  // Anxiety items (7)
-  "I was aware of dryness of my mouth",
-  "I experienced breathing difficulty (e.g., excessively rapid breathing, breathlessness in the absence of physical exertion)",
-  "I experienced trembling (e.g., in the hands)",
-  "I was worried about situations in which I might panic and make a fool of myself",
-  "I felt I was close to panic",
-  "I was aware of the action of my heart in the absence of physical exertion (e.g., sense of heart rate increase, heart missing a beat)",
-  "I felt scared without any good reason",
-  
-  // Stress items (7)
   "I found it hard to wind down",
+  "I was aware of dryness of my mouth",
+  "I couldn't seem to experience any positive feeling at all",
+  "I experienced breathing difficulty (eg. excessively rapid breathing, breathlessness in the absence of physical exertion)",
+  "I found it difficult to work up the initiative to do things",
   "I tended to over-react to situations",
+  "I experienced trembling (eg. in the hands)",
   "I felt that I was using a lot of nervous energy",
+  "I was worried about situations in which I might panic and make a fool of myself",
+  "I felt that I had nothing to look forward to",
   "I found myself getting agitated",
   "I found it difficult to relax",
+  "I felt down-hearted and blue",
   "I was intolerant of anything that kept me from getting on with what I was doing",
-  "I felt that I was rather touchy"
+  "I felt I was close to panic",
+  "I was unable to become enthusiastic about anything",
+  "I felt I wasn't worth much as a person",
+  "I felt that I was rather touchy",
+  "I was aware of the action of my heart in the absence of physical exertion (eg. sense of heart rate increase, heart missing a beat)",
+  "I felt scared without any good reason",
+  "I felt that life was meaningless"
 ];
 
 // Categories for each question (used for scoring)
 export const QUESTION_CATEGORIES = [
-  "depression", "depression", "depression", "depression", "depression", "depression", "depression",
-  "anxiety", "anxiety", "anxiety", "anxiety", "anxiety", "anxiety", "anxiety",
-  "stress", "stress", "stress", "stress", "stress", "stress", "stress"
+  "stress", "anxiety", "depression", "anxiety", "depression", "stress", "anxiety",
+  "stress", "anxiety", "depression", "stress", "stress", "depression", "stress",
+  "anxiety", "depression", "depression", "stress", "anxiety", "anxiety", "depression"
 ];
 
 // DASS-21 severity levels
@@ -64,6 +59,6 @@ export const DASS21_SEVERITY = {
 export const RESPONSE_OPTIONS = [
   { value: 0, text: "Did not apply to me at all" },
   { value: 1, text: "Applied to me to some degree, or some of the time" },
-  { value: 2, text: "Applied to me to a considerable degree, or a good part of time" },
-  { value: 3, text: "Applied to me very much, or most of the time" }
+  { value: 2, text: "Applied to me to a considerable degree or a good part of time" },
+  { value: 3, text: "Applied to me very much or most of the time" }
 ];

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Service Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Class Service Connection Debug</h1>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(type, title, content) {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+
+        async function testDirectAPI() {
+            try {
+                addResult('info', 'Testing Direct API Call', 'Calling http://localhost:5000/api/classes...');
+                
+                const response = await fetch('http://localhost:5000/api/classes');
+                const data = await response.json();
+                
+                addResult('success', 'Direct API Success', JSON.stringify(data, null, 2));
+                
+                return data;
+            } catch (error) {
+                addResult('error', 'Direct API Failed', error.message);
+                return null;
+            }
+        }
+
+        async function testCORSPolicy() {
+            try {
+                addResult('info', 'Testing CORS Policy', 'Checking if CORS is properly configured...');
+                
+                const response = await fetch('http://localhost:5000/api/classes', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                addResult('info', 'CORS Headers', JSON.stringify(corsHeaders, null, 2));
+                
+            } catch (error) {
+                addResult('error', 'CORS Test Failed', error.message);
+            }
+        }
+
+        async function testFrontendAPI() {
+            try {
+                addResult('info', 'Testing Frontend API Call', 'Calling through frontend proxy...');
+                
+                // Try the frontend API endpoint (through Vite proxy)
+                const response = await fetch('/api/classes');
+                const data = await response.json();
+                
+                addResult('success', 'Frontend API Success', JSON.stringify(data, null, 2));
+                
+            } catch (error) {
+                addResult('error', 'Frontend API Failed', error.message);
+            }
+        }
+
+        async function runTests() {
+            addResult('info', 'Starting Tests', 'Running comprehensive API tests...');
+            
+            // Test 1: Direct API call
+            const directData = await testDirectAPI();
+            
+            // Test 2: CORS policy
+            await testCORSPolicy();
+            
+            // Test 3: Frontend API call
+            await testFrontendAPI();
+            
+            // Test 4: Compare results
+            if (directData && directData.data) {
+                const classNames = directData.data.map(c => c.name).join(', ');
+                addResult('info', 'Available Classes', classNames);
+                
+                // Check if these look like mock data
+                const isMockData = directData.data.some(c => 
+                    c.name.includes('IPA-') || c.name.includes('IPS-')
+                );
+                
+                addResult(
+                    isMockData ? 'error' : 'success', 
+                    'Data Source Analysis', 
+                    isMockData ? 'Data appears to be MOCK DATA' : 'Data appears to be from REAL DATABASE'
+                );
+            }
+        }
+
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>

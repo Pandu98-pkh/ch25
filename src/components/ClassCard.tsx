@@ -1,11 +1,14 @@
 import { Class } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Users, School, BookOpen, GraduationCap, User, Calendar } from 'lucide-react';
+import { Users, School, BookOpen, GraduationCap, User, Calendar, Trash2 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useState, useEffect } from 'react';
+import { getClassStudentCount } from '../services/classService';
 
 interface ClassCardProps {
   classItem: Class;
   onClick: (classItem: Class) => void;
+  onDelete?: (classItem: Class) => void;
 }
 
 // Enhanced grade level colors with gradient backgrounds
@@ -37,18 +40,50 @@ const gradeLevelColors: Record<string, {bg: string, text: string, gradient: stri
   },
 };
 
-export default function ClassCard({ classItem, onClick }: ClassCardProps) {
+export default function ClassCard({ classItem, onClick, onDelete }: ClassCardProps) {
   const { t } = useLanguage();
+  const [actualStudentCount, setActualStudentCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  // Fetch actual student count from database
+  useEffect(() => {
+    const fetchStudentCount = async () => {
+      if (!classItem.id) return;
+      
+      try {
+        setLoading(true);
+        const count = await getClassStudentCount(classItem.id);
+        setActualStudentCount(count);
+      } catch (error) {
+        console.error('Error fetching student count:', error);
+        // Fallback to stored count if API fails
+        setActualStudentCount(classItem.studentCount || 0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentCount();
+  }, [classItem.id, classItem.studentCount]);
+
+  // Convert numeric grade to Roman numeral for display
+  const convertGradeToRoman = (grade: string): string => {
+    switch (grade) {
+      case '10': return 'X';
+      case '11': return 'XI';
+      case '12': return 'XII';
+      default: return grade; // Return as-is if already in Roman format
+    }
+  };
   
-  // Get grade prefix (X, XI, XII, or other)
-  const gradePrefix = classItem.gradeLevel.split('-')[0]?.trim().toUpperCase() || '';
+  // Get grade prefix (X, XI, XII, or other) - handle both numeric and Roman
+  const numericGrade = classItem.gradeLevel.split('-')[0]?.trim() || classItem.gradeLevel;
+  const gradePrefix = convertGradeToRoman(numericGrade);
   const gradeStyle = gradeLevelColors[gradePrefix] || gradeLevelColors.default;
-  
-  // Get class icon based on grade level
+    // Get class icon based on grade level
   const getClassIcon = () => {
     if (gradePrefix === 'X') return <BookOpen className="h-5 w-5 text-white" />;
     if (gradePrefix === 'XI') return <School className="h-5 w-5 text-white" />;
-    if (gradePrefix === 'XII') return <GraduationCap className="h-5 w-5 text-white" />; 
+    if (gradePrefix === 'XII') return <GraduationCap className="h-5 w-5 text-white" />;
     return <School className="h-5 w-5 text-white" />;
   };
   
@@ -67,23 +102,38 @@ export default function ClassCard({ classItem, onClick }: ClassCardProps) {
           <div className={`rounded-lg p-2.5 bg-gradient-to-br ${gradeStyle.gradient} shadow-sm flex-shrink-0`}>
             {getClassIcon()}
           </div>
-          
-          <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
               <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-700 transition-colors duration-200">
                 {classItem.name}
               </h3>
               
-              {/* Grade badge */}
-              <div
-                className={cn(
-                  'ml-2 px-3 py-1 rounded-full text-xs font-semibold',
-                  gradeStyle.bg,
-                  gradeStyle.text,
-                  `border ${gradeStyle.border}`
+              <div className="flex items-center gap-2">
+                {/* Delete button */}
+                {onDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(classItem);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200 opacity-0 group-hover:opacity-100"
+                    title={t('actions.delete') || 'Hapus'}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
-              >
-                {gradePrefix || classItem.gradeLevel}
+                
+                {/* Grade badge */}
+                <div
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-semibold',
+                    gradeStyle.bg,
+                    gradeStyle.text,
+                    `border ${gradeStyle.border}`
+                  )}
+                >
+                  {gradePrefix || classItem.gradeLevel}
+                </div>
               </div>
             </div>
             
@@ -104,14 +154,25 @@ export default function ClassCard({ classItem, onClick }: ClassCardProps) {
               {classItem.academicYear}
             </p>
           </div>
-          
-          <div className={`p-3 rounded-lg ${gradeStyle.bg} border ${gradeStyle.border} transition-all duration-200`}>
+            <div className={`p-3 rounded-lg ${gradeStyle.bg} border ${gradeStyle.border} transition-all duration-200`}>
             <div className="flex items-center text-sm">
               <Users className={`h-4 w-4 mr-2 ${gradeStyle.text}`} />
               <span className="text-gray-600">{t('classes.students')}</span>
             </div>
             <p className={`font-semibold mt-1 ${gradeStyle.text}`}>
-              {classItem.studentCount} {t('classes.studentsShort')}
+              {loading ? (
+                <span className="text-gray-400">...</span>
+              ) : (
+                <>
+                  {actualStudentCount}
+                  {classItem.studentCount && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      / {classItem.studentCount}
+                    </span>
+                  )}
+                  <span className="text-xs ml-1">{t('classes.studentsShort')}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -128,12 +189,11 @@ export default function ClassCard({ classItem, onClick }: ClassCardProps) {
                 {classItem.teacherName}
               </p>
             </div>
-          </div>
-        )}
-        
-        {/* Action indicator at bottom */}
-        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${gradeStyle.gradient}"></div>
+          </div>        )}
       </div>
+      
+      {/* Action indicator at bottom */}
+      <div className={`absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${gradeStyle.gradient}`}></div>
     </div>
   );
 }

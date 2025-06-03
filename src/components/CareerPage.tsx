@@ -16,18 +16,23 @@ import {
   Monitor,
   Trophy,
   Users,
-  BrainCircuit,
   ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUser } from '../contexts/UserContext';
 import { CareerAssessment, CareerResource } from '../types';
 import { cn } from '../utils/cn';
-import { searchCareerResources, getCareerResources } from '../services/careerService';
+import { searchCareerResources, getCareerResources, saveAssessment } from '../services/careerService';
 import RiasecAssessment, { RiasecResult } from './RiasecAssessment';
 import RiasecResults from './RiasecResults';
 import MbtiAssessment, { MbtiResult } from './MbtiAssessment';
 import MbtiResults from './MbtiResults';
+import AssessmentsTab from './career/AssessmentsTab';
+import OverviewTab from './career/OverviewTab';
+import CoursesTab from './career/CoursesTab';
+import PathsTab from './career/PathsTab';
+import ResourcesTab from './career/ResourcesTab';
 
 const typeIcons = {
   article: BookOpen,
@@ -109,19 +114,22 @@ interface CareerPageProps {
 interface RiasecCareerAssessment extends CareerAssessment {
   type: 'riasec';
   result: RiasecResult;
+  userId?: string;
+  userName?: string;
 }
 
 interface MbtiCareerAssessment extends CareerAssessment {
   type: 'mbti';
   result: MbtiResult;
+  userId?: string;
+  userName?: string;
 }
 
 export default function CareerPage({ studentId }: CareerPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [assessments, setAssessments] = useState<(CareerAssessment | RiasecCareerAssessment | MbtiCareerAssessment)[]>([]);
   const [resources, setResources] = useState<CareerResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'paths' | 'assessments' | 'resources'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'paths' | 'assessments' | 'resources'>('assessments');
   const [courses, setCourses] = useState<Course[]>([]);
   const [careerPaths, setCareerPaths] = useState<CareerPath[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -130,6 +138,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
   const [currentAssessmentResult, setCurrentAssessmentResult] = useState<RiasecResult | MbtiResult | null>(null);
   const [currentAssessmentType, setCurrentAssessmentType] = useState<'riasec' | 'mbti' | null>(null);
   const { t } = useLanguage();
+  const { user } = useUser();
   const navigate = useNavigate();
 
   const mockCourses = useCallback(() => {
@@ -288,11 +297,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
     try {
       setLoading(true);
       // Load resources and filter any student-specific ones if studentId is provided
-      const [resourcesRes] = await Promise.all([
-        getCareerResources(),
-        // Reset assessments when studentId changes
-        setAssessments([])
-      ]);
+      const resourcesRes = await getCareerResources();
 
       // Filter resources if we have a studentId
       const filteredResources = studentId
@@ -357,7 +362,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
   };
 
   // Handle RIASEC assessment completion
-  const handleRiasecComplete = (result: RiasecResult) => {
+  const handleRiasecComplete = async (result: RiasecResult) => {
     setShowRiasecAssessment(false);
     setCurrentAssessmentResult(result);
     setCurrentAssessmentType('riasec');
@@ -369,24 +374,21 @@ export default function CareerPage({ studentId }: CareerPageProps) {
       type: 'riasec',
       interests: result.topCategories,
       recommendedPaths: result.recommendedCareers.slice(0, 3).map(career => career.title),
-      result: result
+      result: result,
+      userId: user?.id || 'anonymous',
+      userName: user?.name || 'Anonymous User'
     };
     
-    // Add to assessments list
-    setAssessments(prev => [newAssessment, ...prev]);
-    
-    // Simpan ke localStorage untuk persistensi data
+    // Save to database and localStorage
     try {
-      const storedAssessments = localStorage.getItem('careerAssessments');
-      const parsedAssessments = storedAssessments ? JSON.parse(storedAssessments) : [];
-      localStorage.setItem('careerAssessments', JSON.stringify([newAssessment, ...parsedAssessments]));
+      await saveAssessment(newAssessment);
     } catch (error) {
-      console.error('Error saving assessment to localStorage:', error);
+      console.error('Error saving assessment:', error);
     }
   };
   
   // Handle MBTI assessment completion
-  const handleMbtiComplete = (result: MbtiResult) => {
+  const handleMbtiComplete = async (result: MbtiResult) => {
     setShowMbtiAssessment(false);
     setCurrentAssessmentResult(result);
     setCurrentAssessmentType('mbti');
@@ -398,19 +400,16 @@ export default function CareerPage({ studentId }: CareerPageProps) {
       type: 'mbti',
       interests: [result.type],
       recommendedPaths: result.careerSuggestions.slice(0, 3),
-      result: result
+      result: result,
+      userId: user?.id || 'anonymous',
+      userName: user?.name || 'Anonymous User'
     };
     
-    // Add to assessments list
-    setAssessments(prev => [newAssessment, ...prev]);
-    
-    // Simpan ke localStorage untuk persistensi data
+    // Save to database and localStorage
     try {
-      const storedAssessments = localStorage.getItem('careerAssessments');
-      const parsedAssessments = storedAssessments ? JSON.parse(storedAssessments) : [];
-      localStorage.setItem('careerAssessments', JSON.stringify([newAssessment, ...parsedAssessments]));
+      await saveAssessment(newAssessment);
     } catch (error) {
-      console.error('Error saving assessment to localStorage:', error);
+      console.error('Error saving assessment:', error);
     }
   };
 
@@ -419,6 +418,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
     setShowRiasecAssessment(false);
     setShowMbtiAssessment(false);
     setCurrentAssessmentType(null);
+    setCurrentAssessmentResult(null);
   };
 
   // Handle starting a new assessment after viewing results
@@ -438,18 +438,11 @@ export default function CareerPage({ studentId }: CareerPageProps) {
     setActiveTab('assessments');
   };
 
-  // Load saved assessments from localStorage on initial load
-  useEffect(() => {
-    try {
-      const storedAssessments = localStorage.getItem('careerAssessments');
-      if (storedAssessments) {
-        const parsedAssessments = JSON.parse(storedAssessments);
-        setAssessments(parsedAssessments);
-      }
-    } catch (error) {
-      console.error('Error loading assessments from localStorage:', error);
-    }
-  }, []);
+  // Handle viewing assessment details
+  const handleViewAssessmentDetails = (result: RiasecResult | MbtiResult, type: 'riasec' | 'mbti') => {
+    setCurrentAssessmentResult(result);
+    setCurrentAssessmentType(type);
+  };
 
   if (showRiasecAssessment) {
     return (
@@ -544,11 +537,6 @@ export default function CareerPage({ studentId }: CareerPageProps) {
     );
   }
 
-  const filteredResources = resources.filter((resource) =>
-    resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8 bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
@@ -560,7 +548,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
 
       {/* Tab Navigation */}
       <div className="mb-6 border-b border-gray-200 bg-white rounded-t-xl shadow-sm">
-        <nav className="flex overflow-x-auto py-2 px-4 -mb-px space-x-8" aria-label="Tabs">
+        <nav className="flex overflow-x-auto scrollbar-light py-2 px-4 -mb-px space-x-8" aria-label="Tabs">
           {['overview', 'courses', 'paths', 'assessments', 'resources'].map((tab) => (
             <button
               key={tab}
@@ -580,6 +568,40 @@ export default function CareerPage({ studentId }: CareerPageProps) {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
+        <OverviewTab
+          courses={courses}
+          careerPaths={careerPaths}
+          achievements={achievements}
+        />
+      )}
+
+      {activeTab === 'courses' && (
+        <CoursesTab courses={courses} />
+      )}
+
+      {activeTab === 'paths' && (
+        <PathsTab careerPaths={careerPaths} />
+      )}
+
+      {activeTab === 'assessments' && (
+        <AssessmentsTab
+          studentId={studentId}
+          onStartRiasecAssessment={handleStartRiasecAssessment}
+          onStartMbtiAssessment={handleStartMbtiAssessment}
+          onViewAssessmentDetails={handleViewAssessmentDetails}
+        />
+      )}
+
+      {activeTab === 'resources' && (
+        <ResourcesTab
+          resources={resources}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onResourceSearch={handleResourceSearch}
+        />
+      )}
+
+      {false && activeTab === 'overview' && (
         <div className="space-y-8">
           {/* Overview Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -664,7 +686,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
                         
                         <div className="mt-4">
                           <button 
-                            onClick={() => navigate(`/career/course/${course.id}`)}
+                            onClick={() => navigate(`/app/career/course/${course.id}`)}
                             className="inline-flex items-center text-sm font-medium px-4 py-2 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors duration-150"
                           >
                             {t('career.continue')}
@@ -759,7 +781,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
         </div>
       )}
 
-      {activeTab === 'courses' && (
+      {false && activeTab === 'courses' && (
         <div className="space-y-6">
           {/* Search and Filter */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -839,7 +861,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
                       <span className="text-xs text-gray-600 ml-2">{course.instructor}</span>
                     </div>
                     <button 
-                      onClick={() => navigate(`/career/course/${course.id}`)}
+                      onClick={() => navigate(`/app/career/course/${course.id}`)}
                       className="inline-flex items-center text-xs font-medium px-3 py-2 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors duration-150"
                     >
                       {course.progress > 0 ? t('career.continue') : t('career.start')}
@@ -853,7 +875,7 @@ export default function CareerPage({ studentId }: CareerPageProps) {
         </div>
       )}
 
-      {activeTab === 'paths' && (
+      {false && activeTab === 'paths' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {careerPaths.map((path) => {
@@ -930,204 +952,6 @@ export default function CareerPage({ studentId }: CareerPageProps) {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'assessments' && (
-        <div className="space-y-6">
-          <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">{t('career.assessments', 'Penilaian')}</h2>
-            <div className="flex space-x-3">
-              <button 
-                onClick={handleStartRiasecAssessment}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-sm transition-all duration-200"
-              >
-                <BrainCircuit className="h-5 w-5 mr-2" />
-                {t('career.startRiasecAssessment', 'Mulai Penilaian RIASEC')}
-              </button>
-              <button 
-                onClick={handleStartMbtiAssessment}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm transition-all duration-200"
-              >
-                <BrainCircuit className="h-5 w-5 mr-2" />
-                {t('career.startMbtiAssessment', 'Mulai Penilaian MBTI')}
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200">
-            <div className="p-6">
-              {/* Assessment Types Info Banner */}
-              <div className="mb-6 flex flex-col md:flex-row gap-4">
-                <div className="flex-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-                  <div className="flex">
-                    <div className="flex-shrink-0 bg-blue-100 p-3 rounded-xl">
-                      <BrainCircuit className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-md font-semibold text-blue-900">
-                        {t('career.riasecInfo', 'Penilaian Minat Karir RIASEC')}
-                      </h3>
-                      <div className="mt-2 text-sm text-blue-800">
-                        <p>
-                          {t('career.riasecDescription', 'Penilaian RIASEC menganalisis preferensi dan minat Anda berdasarkan teori Holland untuk merekomendasikan jalur karir yang paling sesuai dengan kepribadian Anda.')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-100">
-                  <div className="flex">
-                    <div className="flex-shrink-0 bg-purple-100 p-3 rounded-xl">
-                      <BrainCircuit className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-md font-semibold text-purple-900">
-                        {t('career.mbtiInfo', 'Penilaian Kepribadian MBTI')}
-                      </h3>
-                      <div className="mt-2 text-sm text-purple-800">
-                        <p>
-                          {t('career.mbtiDescription', 'Myers-Briggs Type Indicator (MBTI) membantu Anda memahami preferensi alami dalam cara berpikir dan berinteraksi, untuk menemukan jalur karir yang sesuai dengan kepribadian Anda.')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="divide-y divide-gray-200">
-                {assessments.map((assessment) => (
-                  <div key={assessment.id} className="py-5 first:pt-0 last:pb-0 hover:bg-gray-50 transition-colors duration-150 px-3 -mx-3 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center">
-                          <div className="bg-brand-100 p-2 rounded-xl">
-                            <BrainCircuit className="h-5 w-5 text-brand-600" />
-                          </div>
-                          <p className="ml-3 text-md font-semibold text-gray-900">
-                            {assessment.type === 'riasec' ? 'Penilaian RIASEC' : 'Penilaian MBTI'} - {format(new Date(assessment.date), 'PPP')}
-                          </p>
-                        </div>
-                        <div className="mt-3 space-y-2 ml-10">
-                          <p className="text-sm text-gray-700">
-                            <span className="font-medium">{t('career.interests')}:</span>{' '}
-                            <span className="bg-gray-100 px-2 py-1 rounded-full text-xs">
-                              {assessment.interests.map(interest => 
-                                typeof interest === 'string' 
-                                  ? interest 
-                                  : t(`riasec.categories.${interest}`, interest)
-                              ).join(', ')}
-                            </span>
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            <span className="font-medium">{t('career.recommendedPaths')}:</span>{' '}
-                            <span className="text-gray-600">{assessment.recommendedPaths.join(', ')}</span>
-                          </p>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          if ('result' in assessment) {
-                            setCurrentAssessmentResult(assessment.result);
-                            setCurrentAssessmentType(assessment.type);
-                          }
-                        }}
-                        className="text-sm font-medium px-4 py-2 bg-brand-50 text-brand-700 rounded-lg hover:bg-brand-100 transition-colors duration-150"
-                      >
-                        {t('career.viewDetails')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {assessments.length === 0 && (
-                  <div className="py-12 flex flex-col items-center justify-center">
-                    <div className="p-5 bg-gray-50 rounded-full mb-5">
-                      <BrainCircuit className="h-12 w-12 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('career.noAssessments')}</h3>
-                    <p className="text-sm text-gray-600 text-center max-w-md mb-8">
-                      {t('career.assessmentsDescription', 'Penilaian minat karir membantu Anda menemukan jalur karir yang sesuai dengan minat dan kekuatan Anda. Mulai penilaian pertama Anda untuk mendapatkan rekomendasi personal.')}
-                    </p>
-                    <button 
-                      onClick={handleStartRiasecAssessment}
-                      className="inline-flex items-center px-5 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-sm transition-all duration-200"
-                    >
-                      <BrainCircuit className="h-5 w-5 mr-2" />
-                      {t('career.takeFirstAssessment', 'Ambil Penilaian Pertama')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'resources' && (
-        <div className="space-y-6">
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder={t('career.searchResources')}
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  handleResourceSearch(e.target.value);
-                }}
-                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm">
-                <Filter className="h-5 w-5 mr-2" />
-                {t('career.filter')}
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('career.resources')}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {filteredResources.map((resource) => {
-                  const Icon = typeIcons[resource.type];
-                  return (
-                    <div
-                      key={resource.id}
-                      className="border border-gray-200 rounded-xl p-5 hover:border-brand-300 hover:shadow-md transition-all duration-200 bg-white"
-                    >
-                      <div className="flex items-start">
-                        <div className={cn(
-                          'p-3 rounded-xl',
-                          typeColors[resource.type]
-                        )}>
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <div className="ml-4 flex-1">
-                          <h3 className="text-md font-semibold text-gray-900">{resource.title}</h3>
-                          <p className="mt-2 text-sm text-gray-600 line-clamp-2">{resource.description}</p>
-                          <div className="mt-4 pt-3 border-t border-gray-100">
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center text-sm font-medium px-4 py-2 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors duration-150"
-                            >
-                              {t(`career.type.${resource.type}`)}
-                              <ChevronRight className="ml-1 h-4 w-4" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       )}

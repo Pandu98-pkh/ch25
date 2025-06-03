@@ -110,8 +110,8 @@ const MOCK_CAREER_RESOURCES: CareerResource[] = [
   }
 ];
 
-// Pengaturan untuk menggunakan mock data
-let useMockData = true;
+// Pengaturan untuk menggunakan mock data - disabled untuk menggunakan database
+let useMockData = false;
 
 // Career Assessment endpoints
 export const getCareerAssessments = async (studentId: string, page = 1): Promise<ApiResponse<CareerAssessment>> => {
@@ -133,7 +133,7 @@ export const getCareerAssessments = async (studentId: string, page = 1): Promise
       };
     }
     
-    const response = await api.get(`/career-assessments/?student=${studentId}&page=${page}`);
+    const response = await api.get(`/career-assessments?student=${studentId}&page=${page}`);
     
     // Pastikan data dari API juga memiliki ID unik
     const uniqueAssessments = validateUniqueIds(response.data.results || []) as CareerAssessment[];
@@ -143,17 +143,17 @@ export const getCareerAssessments = async (studentId: string, page = 1): Promise
       count: response.data.count || uniqueAssessments.length,
       totalPages: response.data.total_pages || 1,
       currentPage: response.data.current_page || page
-    };
-  } catch (error) {
+    };  } catch (error) {
     console.error('Error loading career assessments:', error);
-    useMockData = true;
     
-    // Fallback ke mock data
+    // Don't immediately switch to mock data - check if it's a real backend failure
+    console.warn('API call failed, but keeping useMockData = false. Backend might be accessible.');
+    
+    // Only return mock data as last resort, but don't permanently enable mock mode
     const filteredAssessments = MOCK_CAREER_ASSESSMENTS.filter(
       assessment => assessment.studentId === studentId
     );
     
-    // Pastikan semua ID unik
     const uniqueAssessments = validateUniqueIds(filteredAssessments) as CareerAssessment[];
     
     return {
@@ -175,33 +175,22 @@ export const createCareerAssessment = async (assessment: Omit<CareerAssessment, 
       MOCK_CAREER_ASSESSMENTS.push(newAssessment);
       return newAssessment;
     }
-    
-    const response = await api.post('/career-assessments/', assessment);
-    return response.data;
-  } catch (error) {
+      const response = await api.post('/career-assessments', assessment);
+    return response.data;  } catch (error) {
     console.error('Error creating career assessment:', error);
     
-    if (!useMockData) {
-      useMockData = true;
-      const newAssessment: CareerAssessment = {
-        ...assessment,
-        id: String(Date.now())
-      };
-      MOCK_CAREER_ASSESSMENTS.push(newAssessment);
-      return newAssessment;
-    }
-    
-    throw error;
+    // Don't permanently enable mock mode - let user know the operation failed
+    throw new Error('Failed to save assessment to database. Please try again.');
   }
 };
 
 export const updateCareerAssessment = async (id: string, data: Partial<CareerAssessment>) => {
-  const response = await api.put(`/career-assessments/${id}/`, data);
+  const response = await api.put(`/career-assessments/${id}`, data);
   return response.data;
 };
 
 export const deleteCareerAssessment = async (id: string) => {
-  await api.delete(`/career-assessments/${id}/`);
+  await api.delete(`/career-assessments/${id}`);
 };
 
 // Career Resource endpoints
@@ -216,14 +205,14 @@ export const getCareerResources = async (page = 1) => {
         current_page: 1
       };
     }
-    
-    const response = await api.get(`/career-resources/?page=${page}`);
-    return response.data;
-  } catch (error) {
+      const response = await api.get(`/career-resources?page=${page}`);
+    return response.data;  } catch (error) {
     console.error('Error loading career resources:', error);
-    useMockData = true;
     
-    // Fallback ke mock data
+    // Don't permanently switch to mock data - keep trying database
+    console.warn('Career resources API failed, returning mock data temporarily but keeping database mode enabled');
+    
+    // Return mock data as fallback without changing the useMockData flag
     return {
       results: MOCK_CAREER_RESOURCES,
       count: MOCK_CAREER_RESOURCES.length,
@@ -259,22 +248,24 @@ export const searchCareerResources = async (params: {
         count: filteredResources.length
       };
     }
-    
-    let url = '/career-resources/search/?';
+      // The backend supports filtering via query parameters, so we'll use the main endpoint
+    let url = '/career-resources?';
     const queryParams = new URLSearchParams();
     
     if (params.tags?.length) {
-      params.tags.forEach(tag => queryParams.append('tags', tag));
+      // For tags, we'll join them with commas for the backend search
+      queryParams.append('tags', params.tags.join(','));
     }
     if (params.type) {
       queryParams.append('type', params.type);
     }
     
     const response = await api.get(`${url}${queryParams}`);
-    return response.data;
-  } catch (error) {
+    return response.data;  } catch (error) {
     console.error('Error searching career resources:', error);
-    useMockData = true;
+    
+    // Don't permanently enable mock mode - return fallback data temporarily
+    console.warn('Search API failed, returning filtered mock data temporarily');
     
     // Filter mock data as fallback
     let filteredResources = [...MOCK_CAREER_RESOURCES];
@@ -299,23 +290,39 @@ export const searchCareerResources = async (params: {
 };
 
 export const createCareerResource = async (resource: Omit<CareerResource, 'id'>) => {
-  const response = await api.post('/career-resources/', resource);
+  const response = await api.post('/career-resources', resource);
   return response.data;
 };
 
 export const updateCareerResource = async (id: string, data: Partial<CareerResource>) => {
-  const response = await api.put(`/career-resources/${id}/`, data);
+  const response = await api.put(`/career-resources/${id}`, data);
   return response.data;
 };
 
 export const deleteCareerResource = async (id: string) => {
-  await api.delete(`/career-resources/${id}/`);
+  await api.delete(`/career-resources/${id}`);
 };
 
 // Utility function to toggle mock data mode
 export const toggleCareerMockData = (enable?: boolean) => {
   useMockData = enable !== undefined ? enable : !useMockData;
+  console.log(`Career service mock data mode: ${useMockData ? 'ENABLED' : 'DISABLED'}`);
   return useMockData;
+};
+
+// Utility function to force reload from database
+export const forceReloadFromDatabase = () => {
+  useMockData = false;
+  console.log('🔄 Forced reload from database - mock data disabled');
+  return useMockData;
+};
+
+// Utility function to check current mock data status
+export const getCareerMockDataStatus = () => {
+  return {
+    useMockData,
+    message: useMockData ? 'Using mock data' : 'Using database'
+  };
 };
 
 
@@ -425,6 +432,151 @@ export const searchCareerResourcesMock = async (
   return {
     results
   };
+};
+
+// Types for specific assessment formats used by CareerPage
+interface RiasecCareerAssessment {
+  id: string;
+  date: string;
+  type: 'riasec';
+  interests: string[];
+  recommendedPaths: string[];
+  result: any; // RiasecResult
+  userId?: string;
+  userName?: string;
+}
+
+interface MbtiCareerAssessment {
+  id: string;
+  date: string;
+  type: 'mbti';
+  interests: string[];
+  recommendedPaths: string[];
+  result: any; // MbtiResult
+  userId?: string;
+  userName?: string;
+}
+
+type ExtendedCareerAssessment = CareerAssessment | RiasecCareerAssessment | MbtiCareerAssessment;
+
+// Load user's assessments with enhanced fallback to localStorage
+export const loadUserAssessments = async (userId: string): Promise<ExtendedCareerAssessment[]> => {
+  try {
+    if (useMockData) {
+      // Load from localStorage as fallback
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      if (storedAssessments) {
+        const parsedAssessments = JSON.parse(storedAssessments);
+        return parsedAssessments.filter((assessment: any) => 
+          assessment.userId === userId || !assessment.userId
+        );
+      }
+      return [];
+    }
+
+    // Load from API
+    const response = await getCareerAssessments(userId);
+    return response.data;
+  } catch (error) {
+    console.error('Error loading user assessments:', error);
+    
+    // Fallback to localStorage
+    try {
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      if (storedAssessments) {
+        const parsedAssessments = JSON.parse(storedAssessments);
+        return parsedAssessments.filter((assessment: any) => 
+          assessment.userId === userId || !assessment.userId
+        );
+      }
+    } catch (localStorageError) {
+      console.error('Error loading from localStorage:', localStorageError);
+    }
+    
+    return [];
+  }
+};
+
+// Save assessment to database with localStorage backup
+export const saveAssessment = async (assessment: RiasecCareerAssessment | MbtiCareerAssessment): Promise<void> => {
+  try {
+    // Map the frontend assessment format to backend format
+    const backendAssessment = {
+      studentId: assessment.userId || 'anonymous',
+      date: assessment.date,
+      type: assessment.type,
+      interests: assessment.interests,
+      skills: [], // Not used in current assessments
+      values: [], // Not used in current assessments
+      recommendedPaths: assessment.recommendedPaths,
+      notes: `${assessment.type.toUpperCase()} Assessment - User: ${assessment.userName || 'Anonymous'}`,
+      results: assessment.result // Store the detailed result as object
+    };    if (!useMockData) {
+      // Save to database
+      await createCareerAssessment(backendAssessment);
+      console.log('✅ Assessment saved to database successfully');
+    } else {
+      console.log('ℹ️ Mock mode enabled - assessment not saved to database');
+    }
+      // Also save to localStorage as backup
+    try {
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      const parsedAssessments = storedAssessments ? JSON.parse(storedAssessments) : [];
+      localStorage.setItem('careerAssessments', JSON.stringify([assessment, ...parsedAssessments]));
+      console.log('✅ Assessment also saved to localStorage as backup');
+    } catch (localStorageError: any) {
+      console.warn('⚠️ Could not save to localStorage:', localStorageError);
+      // Don't fail the entire operation for localStorage issues
+    }
+      } catch (error: any) {
+    console.error('❌ Error saving assessment to database:', error);
+    
+    // Try to save to localStorage as fallback
+    try {
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      const parsedAssessments = storedAssessments ? JSON.parse(storedAssessments) : [];
+      localStorage.setItem('careerAssessments', JSON.stringify([assessment, ...parsedAssessments]));
+      console.log('✅ Assessment saved to localStorage as fallback');
+      
+      // Don't throw error if localStorage save succeeds
+      throw new Error(`Database save failed, but assessment was saved locally: ${error.message || error}`);
+    } catch (localStorageError: any) {
+      console.error('❌ Both database and localStorage save failed:', localStorageError);
+      throw new Error(`Failed to save assessment: ${error.message || error}`);
+    }
+  }
+};
+
+// Load all assessments for counselors/admins
+export const loadAllAssessments = async (): Promise<ExtendedCareerAssessment[]> => {
+  try {
+    if (useMockData) {
+      // Load from localStorage as fallback
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      if (storedAssessments) {
+        return JSON.parse(storedAssessments);
+      }
+      return [];
+    }
+
+    // Load all assessments from API (admin endpoint)
+    const response = await getCareerAssessments(''); // Empty string for all assessments
+    return response.data;
+  } catch (error) {
+    console.error('Error loading all assessments:', error);
+    
+    // Fallback to localStorage
+    try {
+      const storedAssessments = localStorage.getItem('careerAssessments');
+      if (storedAssessments) {
+        return JSON.parse(storedAssessments);
+      }
+    } catch (localStorageError) {
+      console.error('Error loading from localStorage:', localStorageError);
+    }
+    
+    return [];
+  }
 };
 
 

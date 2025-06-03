@@ -1,12 +1,14 @@
 import { Student } from '../types';
 import { cn } from '../utils/cn';
-import { AlertCircle, CheckCircle2, Clock, User, BookOpen, Award } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, User, BookOpen, Award, Edit, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useState } from 'react';
 
 interface StudentCardProps {
   student: Student;
   onClick: (student: Student) => void;
+  onEdit?: (student: Student) => void;
+  onDelete?: (student: Student) => void;
 }
 
 const statusConfig: Record<string, {
@@ -35,7 +37,7 @@ const statusConfig: Record<string, {
   }
 };
 
-export default function StudentCard({ student, onClick }: StudentCardProps) {
+export default function StudentCard({ student, onClick, onEdit, onDelete }: StudentCardProps) {
   const status = student.academicStatus || 'warning';
   const { t } = useLanguage();
   const [imageError, setImageError] = useState(false);
@@ -48,6 +50,16 @@ export default function StudentCard({ student, onClick }: StudentCardProps) {
   
   // Get status configuration
   const statusCfg = statusConfig[status] || statusConfig.warning;
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(student);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(student);
+  };
   
   return (
     <div
@@ -60,6 +72,30 @@ export default function StudentCard({ student, onClick }: StudentCardProps) {
         "h-1.5 w-full absolute top-0 left-0", 
         statusCfg.bgColor
       )}></div>
+
+      {/* Action buttons - only show if handlers are provided */}
+      {(onEdit || onDelete) && (
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1 z-10">
+          {onEdit && (
+            <button
+              onClick={handleEdit}
+              className="p-1.5 rounded-full bg-white shadow-md border border-gray-200 text-gray-600 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+              title={t('actions.edit') || 'Edit'}
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="p-1.5 rounded-full bg-white shadow-md border border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-300 transition-colors"
+              title={t('actions.delete') || 'Delete'}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
       
       <div className="p-5 pt-6">
         <div className="flex items-center space-x-4">
