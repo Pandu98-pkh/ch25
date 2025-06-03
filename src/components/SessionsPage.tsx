@@ -1546,6 +1546,40 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
                              selectedSession.outcome === 'neutral' ? 'Neutral' : 'Negative'}
                           </span>
                         </div>
+                        <div className="flex items-center">
+                          <span className="font-medium text-sm text-gray-700 mr-2">Status:</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center ${
+                            !selectedSession.approvalStatus || (selectedSession as any).approvalStatus === 'pending' 
+                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                              : (selectedSession as any).approvalStatus === 'approved' 
+                                ? 'bg-green-100 text-green-800 border border-green-200' 
+                                : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {!selectedSession.approvalStatus || (selectedSession as any).approvalStatus === 'pending' ? (
+                              <>
+                                <AlertTriangle className="h-3 w-3 mr-1 text-yellow-500" />
+                                Pending Approval
+                              </>
+                            ) : (selectedSession as any).approvalStatus === 'approved' ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1 text-green-500" />
+                                Approved
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-3 w-3 mr-1 text-red-500" />
+                                Rejected
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        {(selectedSession as any).approvalStatus === 'rejected' && (selectedSession as any).rejectionReason && (
+                          <div className="bg-red-50 border border-red-200 rounded-md p-2 mt-2">
+                            <p className="text-xs text-red-700">
+                              <span className="font-medium">Rejection Reason:</span> {(selectedSession as any).rejectionReason}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
