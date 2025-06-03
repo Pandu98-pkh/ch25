@@ -2,6 +2,7 @@
 CounselorHub Database Creation Script
 Creates the complete database structure for the student counseling system
 with all tables and sample data using MySQL with admin credentials.
+Updated June 2025 - Generated from current database structure analysis.
 """
 
 import mysql.connector
@@ -67,8 +68,7 @@ def create_tables():
     
     try:
         cursor = connection.cursor()
-        
-        # Users table
+          # Users table
         users_table = """
         CREATE TABLE users (
             user_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -78,7 +78,7 @@ def create_tables():
             name VARCHAR(100) NOT NULL,
             role ENUM('admin', 'counselor', 'student') NOT NULL,
             photo TEXT,
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_user_id (user_id),
@@ -87,8 +87,7 @@ def create_tables():
             INDEX idx_role (role)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Classes table
+          # Classes table
         classes_table = """
         CREATE TABLE classes (
             class_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -97,15 +96,14 @@ def create_tables():
             student_count INT DEFAULT 0,
             academic_year VARCHAR(10) NOT NULL,
             teacher_name VARCHAR(100),
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_class_id (class_id),
             INDEX idx_grade_level (grade_level),
             INDEX idx_academic_year (academic_year)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        """
-        # Students table (normalized - user data accessed via users table)
+        """        # Students table (normalized - user data accessed via users table)
         students_table = """
         CREATE TABLE students (
             student_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -113,7 +111,7 @@ def create_tables():
             program VARCHAR(50),
             mental_health_score INT,
             last_counseling TIMESTAMP NULL,
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             class_id VARCHAR(50),
@@ -125,14 +123,13 @@ def create_tables():
             INDEX idx_academic_status (academic_status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Counseling Sessions table
+          # Counseling Sessions table (Updated with approval system)
         sessions_table = """
         CREATE TABLE counseling_sessions (
             session_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
             student_id VARCHAR(50) NOT NULL,
             counselor_id VARCHAR(50) NOT NULL,
-            date TIMESTAMP NOT NULL,
+            date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             duration INT NOT NULL COMMENT 'Duration in minutes',
             notes TEXT,
             session_type ENUM('academic', 'behavioral', 'mental-health', 'career', 'social') NOT NULL,
@@ -141,17 +138,24 @@ def create_tables():
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+            approved_by VARCHAR(50),
+            approved_at TIMESTAMP NULL,
+            rejection_reason TEXT,
+            follow_up TEXT,
             FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
             FOREIGN KEY (counselor_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL,
             INDEX idx_session_id (session_id),
             INDEX idx_student_id (student_id),
             INDEX idx_counselor_id (counselor_id),
             INDEX idx_date (date),
-            INDEX idx_session_type (session_type)
+            INDEX idx_session_type (session_type),
+            INDEX idx_approval_status (approval_status),
+            INDEX fk_approved_by (approved_by)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Mental Health Assessments table
+          # Mental Health Assessments table
         assessments_table = """
         CREATE TABLE mental_health_assessments (
             assessment_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -165,7 +169,7 @@ def create_tables():
             category VARCHAR(50) NOT NULL,
             responses TEXT COMMENT 'Assessment responses as JSON string',
             recommendations TEXT,
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
@@ -177,8 +181,7 @@ def create_tables():
             INDEX idx_risk_level (risk_level)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Behavior Records table
+          # Behavior Records table
         behavior_table = """
         CREATE TABLE behavior_records (
             record_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -190,8 +193,8 @@ def create_tables():
             severity ENUM('positive', 'neutral', 'minor', 'major') NOT NULL,
             category VARCHAR(50) COMMENT 'attendance, discipline, participation, social',
             action_taken TEXT,
-            follow_up_required BOOLEAN DEFAULT FALSE,
-            is_active BOOLEAN DEFAULT TRUE,
+            follow_up_required TINYINT(1) DEFAULT 0,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
@@ -203,8 +206,7 @@ def create_tables():
             INDEX idx_severity (severity)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Career Assessments table
+          # Career Assessments table
         career_table = """
         CREATE TABLE career_assessments (
             assessment_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -217,7 +219,7 @@ def create_tables():
             recommended_paths TEXT,
             notes TEXT,
             results TEXT COMMENT 'Detailed assessment results as JSON string',
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
@@ -226,8 +228,7 @@ def create_tables():
             INDEX idx_assessment_type (assessment_type)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Career Resources table
+          # Career Resources table
         resources_table = """
         CREATE TABLE career_resources (
             resource_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -238,7 +239,7 @@ def create_tables():
             tags TEXT,
             date_published TIMESTAMP NULL,
             author VARCHAR(100),
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_resource_id (resource_id),
@@ -246,8 +247,7 @@ def create_tables():
             INDEX idx_title (title)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
-        
-        # Notifications table
+          # Notifications table
         notifications_table = """
         CREATE TABLE notifications (
             notification_id VARCHAR(50) UNIQUE NOT NULL PRIMARY KEY,
@@ -256,10 +256,10 @@ def create_tables():
             message TEXT NOT NULL,
             notification_type VARCHAR(50) NOT NULL,
             priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-            is_read BOOLEAN DEFAULT FALSE,
+            is_read TINYINT(1) DEFAULT 0,
             action_url VARCHAR(500),
             expires_at TIMESTAMP NULL,
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active TINYINT(1) DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -365,14 +365,18 @@ def insert_sample_data():
             INSERT INTO students (student_id,  academic_status, program, mental_health_score, class_id, user_id) 
             VALUES (%s,  %s, %s, %s, %s, %s)
         """, students_data)
-        
-        # Insert Counseling Sessions (update to use string IDs)
+          # Insert Counseling Sessions (update to use string IDs)
         sessions_data = [
-            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU001', 'USR002', '2024-01-15 10:00:00', 45, 'academic', 'positive', 'Initial counseling session. Student adjusting well to new grade.', 'Continue monitoring academic progress'),
-            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU002', 'USR002', '2024-01-20 14:30:00', 60, 'mental-health', 'neutral', 'Academic stress discussion. Provided study techniques.', 'Follow-up session scheduled for next week'),
-            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU003', 'USR003', '2024-01-25 11:15:00', 50, 'career', 'positive', 'Career guidance session. Discussed future academic paths.', 'Explore university programs'),
-            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU004', 'USR003', '2024-01-28 09:00:00', 55, 'behavioral', 'neutral', 'Addressed attendance issues and time management.', 'Weekly check-ins for next month'),
+            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU001', 'USR002', '2024-01-15 10:00:00', 45, 'Initial counseling session. Student adjusting well to new grade.', 'academic', 'positive', 'Continue monitoring academic progress'),
+            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU002', 'USR002', '2024-01-20 14:30:00', 60, 'Academic stress discussion. Provided study techniques.', 'mental-health', 'neutral', 'Follow-up session scheduled for next week'),
+            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU003', 'USR003', '2024-01-25 11:15:00', 50, 'Career guidance session. Discussed future academic paths.', 'career', 'positive', 'Explore university programs'),
+            (f'SES_{uuid.uuid4().hex[:8].upper()}', 'STU004', 'USR003', '2024-01-28 09:00:00', 55, 'Addressed attendance issues and time management.', 'behavioral', 'neutral', 'Weekly check-ins for next month'),
         ]
+        
+        cursor.executemany("""
+            INSERT INTO counseling_sessions (session_id, student_id, counselor_id, date, duration, notes, session_type, outcome, next_steps) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, sessions_data)
         
         # Insert Mental Health Assessments (update to use string IDs)
         assessments_data = [
@@ -380,25 +384,37 @@ def insert_sample_data():
             (f'MHA_{uuid.uuid4().hex[:8].upper()}', 'STU002', 'USR002', '2024-01-20 14:30:00', 8, 'PHQ-9', 'moderate', 'depression', '{"q1": 1, "q2": 1, "q3": 1, "q4": 1, "q5": 1, "q6": 0, "q7": 1, "q8": 1, "q9": 1}', 'Minimal depressive symptoms', 'Continue monitoring, lifestyle modifications'),
             (f'MHA_{uuid.uuid4().hex[:8].upper()}', 'STU004', 'USR003', '2024-01-28 09:00:00', 12, 'DASS-21', 'high', 'stress', '{"depression": 4, "anxiety": 3, "stress": 5}', 'Elevated stress levels requiring intervention', 'Immediate counseling sessions and stress reduction plan'),
         ]
-        
-        # Insert Behavior Records (update to use string IDs)
+          # Insert Behavior Records (update to use string IDs)
         behavior_data = [
-            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU001', 'USR002', '2024-01-10 08:00:00', 'positive', 'Helped a classmate with studies', 'positive', 'participation', 'Positive reinforcement provided', False),
-            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU002', 'USR002', '2024-01-18 14:00:00', 'negative', 'Late submission of assignments', 'minor', 'discipline', 'Discussed time management strategies', True),
-            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU004', 'USR003', '2024-01-22 09:30:00', 'negative', 'Frequent absences from class', 'major', 'attendance', 'Parent meeting scheduled, attendance plan created', True),
+            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU001', 'USR002', '2024-01-10 08:00:00', 'positive', 'Helped a classmate with studies', 'positive', 'participation', 'Positive reinforcement provided', 0),
+            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU002', 'USR002', '2024-01-18 14:00:00', 'negative', 'Late submission of assignments', 'minor', 'discipline', 'Discussed time management strategies', 1),
+            (f'BEH_{uuid.uuid4().hex[:8].upper()}', 'STU004', 'USR003', '2024-01-22 09:30:00', 'negative', 'Frequent absences from class', 'major', 'attendance', 'Parent meeting scheduled, attendance plan created', 1),
         ]
+        cursor.executemany("""
+            INSERT INTO behavior_records (record_id, student_id, reporter_id, date, behavior_type, description, severity, category, action_taken, follow_up_required) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, behavior_data)
+        
+        cursor.executemany("""
+            INSERT INTO mental_health_assessments (assessment_id, student_id, assessor_id, date, score, assessment_type, risk_level, category, responses, notes, recommendations) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, assessments_data)
+        
+        cursor.executemany("""
+            INSERT INTO career_assessments (assessment_id, student_id, date, assessment_type, interests, skills, values_data, recommended_paths, notes, results) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, career_data)
         
         # Insert Career Assessments (update to use string IDs)
         career_data = [
             (f'CAR_{uuid.uuid4().hex[:8].upper()}', 'STU003', '2024-01-25 11:15:00', 'riasec', '["Investigative", "Realistic"]', '["mathematics", "problem_solving", "logical_thinking"]', '["achievement", "independence", "intellectual_stimulation"]', '["Engineering", "Computer Science", "Data Science"]', 'Strong aptitude for STEM fields', '{"realistic": 85, "investigative": 90, "artistic": 45, "social": 60, "enterprising": 55, "conventional": 70}'),
             (f'CAR_{uuid.uuid4().hex[:8].upper()}', 'STU005', '2024-01-30 15:00:00', 'riasec', '["Artistic", "Social"]', '["creativity", "communication", "artistic_ability"]', '["creativity", "helping_others", "self_expression"]', '["Graphic Design", "Psychology", "Creative Writing"]', 'Strong creative and social inclinations', '{"realistic": 40, "investigative": 55, "artistic": 92, "social": 85, "enterprising": 60, "conventional": 45}'),
         ]
-        
-        # Insert Sample Notifications (update to use string IDs)
+          # Insert Sample Notifications (update to use string IDs)
         notifications_data = [
-            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR002', 'New Student Assessment Required', 'Student Alice Smith requires mental health assessment follow-up', 'assessment', 'high', False, '/students/STU001/assessments'),
-            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR003', 'Behavior Follow-up Needed', 'David Wilson requires follow-up on attendance issues', 'behavior', 'medium', False, '/students/STU004/behavior'),
-            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR001', 'System Update Completed', 'CounselorHub system has been updated with new features', 'system', 'low', False, '/settings'),
+            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR002', 'New Student Assessment Required', 'Student Alice Smith requires mental health assessment follow-up', 'assessment', 'high', 0, '/students/STU001/assessments'),
+            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR003', 'Behavior Follow-up Needed', 'David Wilson requires follow-up on attendance issues', 'behavior', 'medium', 0, '/students/STU004/behavior'),
+            (f'NOT_{uuid.uuid4().hex[:8].upper()}', 'USR001', 'System Update Completed', 'CounselorHub system has been updated with new features', 'system', 'low', 0, '/settings'),
         ]
         
         cursor.executemany("""
@@ -488,18 +504,17 @@ def show_database_info():
             else:
                 password = 'counselor123' if '1' in username else 'counselor456'
             print(f"{role.capitalize():<10}: {username:<15} | {email:<30} | Password: {password}")
-        
         print("\nSample Students:")
         print("-" * 30)
         cursor.execute("""
-            SELECT s.student_id, u.name, s.kelas, s.academic_status 
+            SELECT s.student_id, u.name, s.class_id, s.academic_status 
             FROM students s 
-            JOIN users u ON s.user_id = u.id 
+            JOIN users u ON s.user_id = u.user_id 
             LIMIT 5
         """)
         students = cursor.fetchall()
-        for student_id, name, kelas, status in students:
-            print(f"{student_id}: {name:<15} | Class: {kelas:<5} | Status: {status}")
+        for student_id, name, class_id, status in students:
+            print(f"{student_id}: {name:<15} | Class: {class_id:<5} | Status: {status}")
         
         print("\nDatabase URL for Applications:")
         print("-" * 30)

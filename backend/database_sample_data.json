@@ -1,0 +1,23 @@
+{
+  "behavior_records": {
+    "columns": [
+      "record_id",
+      "student_id",
+      "reporter_id",
+      "date",
+      "behavior_type",
+      "description",
+      "severity",
+      "category",
+      "action_taken",
+      "follow_up_required",
+      "is_active",
+      "created_at",
+      "updated_at"
+    ],
+    "sample_rows": [
+      [
+        "behavior-20250603-055632-1103250036",
+        "1103250036",
+        "ADM-2025-001",
+        
