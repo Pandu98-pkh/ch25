@@ -78,17 +78,14 @@ export default function MentalHealthPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const navigate = useNavigate();
-  
-  // Use the new database hook based on user role
-  const studentIdFilter = (isAdmin || isCounselor) ? undefined : user?.id;
-  
+  // Use the new database hook - show all assessments without filter
   const {
     assessments: dbAssessments,
     loading,
     error,
     refetch
   } = useMentalHealthAssessments({ 
-    studentId: studentIdFilter 
+    // No studentId filter - show all assessments
   });
 
   // Transform database assessments to legacy format for compatibility
@@ -112,10 +109,9 @@ export default function MentalHealthPage() {
     recommendations: assessment.mlInsights?.recommendedActions,
     subScores: (assessment as any).subScores
   }));
-
   const deleteAssessment = async (id: string) => {
     try {
-      // Call the database hook's delete function which handles both mock and real data
+      // Call the localStorage service's delete function
       await import('../services/mentalHealthService').then(service => 
         service.deleteMentalHealthAssessment(id)
       );
@@ -123,9 +119,9 @@ export default function MentalHealthPage() {
       // Refetch data to update the UI
       await refetch();
       
-      console.log('✅ Assessment deleted successfully:', id);
+      console.log('✅ Assessment deleted successfully from localStorage:', id);
     } catch (error) {
-      console.error('❌ Error deleting assessment:', error);
+      console.error('❌ Error deleting assessment from localStorage:', error);
       // Still try to refetch in case the delete succeeded but response failed
       await refetch();
     }

@@ -2294,12 +2294,11 @@ def get_mental_health_assessments():
         cursor.execute(paginated_query, params)
         
         assessments = cursor.fetchall()
-        
-        # Transform to frontend format
+          # Transform to frontend format
         formatted_assessments = []
         for assessment in assessments:
             formatted_assessment = {
-                'id': str(assessment['id']),
+                'id': str(assessment['assessment_id']),
                 'studentId': assessment['student_id'],
                 'type': assessment['assessment_type'],
                 'score': assessment['score'],
@@ -2308,7 +2307,7 @@ def get_mental_health_assessments():
                 'date': assessment['date'].strftime('%Y-%m-%d') if assessment['date'] else '',
                 'category': assessment['category'] or 'general',
                 'assessor': {
-                    'id': assessment['assessor_type'] or 'system',
+                    'id': assessment['assessor_id'] or 'system',
                     'name': assessment['assessor_name'] or 'System'
                 }
             }
@@ -2397,13 +2396,12 @@ def update_mental_health_assessment(assessment_id):
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
-    
     try:
         data = request.get_json()
         cursor = connection.cursor(dictionary=True)
         
         # Check if assessment exists
-        cursor.execute("SELECT id FROM mental_health_assessments WHERE id = %s", (assessment_id,))
+        cursor.execute("SELECT assessment_id FROM mental_health_assessments WHERE assessment_id = %s", (assessment_id,))
         if not cursor.fetchone():
             return jsonify({'error': 'Assessment not found'}), 404
         
@@ -2445,8 +2443,7 @@ def update_mental_health_assessment(assessment_id):
         # Add updated timestamp
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         values.append(assessment_id)
-        
-        update_query = f"UPDATE mental_health_assessments SET {', '.join(update_fields)} WHERE id = %s"
+        update_query = f"UPDATE mental_health_assessments SET {', '.join(update_fields)} WHERE assessment_id = %s"
         cursor.execute(update_query, values)
         connection.commit()
         
@@ -2457,7 +2454,7 @@ def update_mental_health_assessment(assessment_id):
             LEFT JOIN users u ON mha.assessor_id = u.user_id
             LEFT JOIN students st ON mha.student_id = st.student_id
             LEFT JOIN users s ON st.user_id = s.user_id
-            WHERE mha.id = %s
+            WHERE mha.assessment_id = %s
         """, (assessment_id,))
         
         updated_assessment = cursor.fetchone()
@@ -2469,10 +2466,9 @@ def update_mental_health_assessment(assessment_id):
                 responses = json.loads(updated_assessment['responses'])
             except:
                 responses = {}
-        
         result = {
-            'id': updated_assessment['id'],
-            'assessment_id': updated_assessment['id'],
+            'id': updated_assessment['assessment_id'],
+            'assessment_id': updated_assessment['assessment_id'],
             'student_id': updated_assessment['student_id'],
             'student_name': updated_assessment['student_name'],
             'assessor_id': updated_assessment['assessor_id'],
@@ -2481,8 +2477,7 @@ def update_mental_health_assessment(assessment_id):
             'score': updated_assessment['score'],
             'notes': updated_assessment['notes'],
             'assessment_type': updated_assessment['assessment_type'],
-            'risk_level': updated_assessment['risk_level'],
-            'category': updated_assessment['category'],
+            'risk_level': updated_assessment['risk_level'],            'category': updated_assessment['category'],
             'responses': responses,
             'recommendations': updated_assessment['recommendations']
         }
@@ -2493,8 +2488,9 @@ def update_mental_health_assessment(assessment_id):
         logger.error(f"Error updating mental health assessment {assessment_id}: {e}")
         return jsonify({'error': 'Failed to update mental health assessment'}), 500
     finally:
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
+            if 'cursor' in locals():
+                cursor.close()
             connection.close()
 
 @app.route('/api/mental-health/assessments/<assessment_id>', methods=['DELETE'])
@@ -2504,16 +2500,16 @@ def delete_mental_health_assessment(assessment_id):
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
     
-    try:
+    try:        
         cursor = connection.cursor(dictionary=True)
         
         # Check if assessment exists
-        cursor.execute("SELECT id FROM mental_health_assessments WHERE id = %s", (assessment_id,))
+        cursor.execute("SELECT assessment_id FROM mental_health_assessments WHERE assessment_id = %s", (assessment_id,))
         if not cursor.fetchone():
             return jsonify({'error': 'Assessment not found'}), 404
         
         # Delete the assessment
-        cursor.execute("DELETE FROM mental_health_assessments WHERE id = %s", (assessment_id,))
+        cursor.execute("DELETE FROM mental_health_assessments WHERE assessment_id = %s", (assessment_id,))
         connection.commit()
         
         return jsonify({'message': 'Assessment deleted successfully'})

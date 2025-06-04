@@ -3,7 +3,6 @@ import { MentalHealthAssessment } from '../types';
 import { useMentalHealthAssessments } from '../hooks/useMentalHealthAssessments';
 import { useUser } from './UserContext';
 import { createMentalHealthAssessment } from '../services/mentalHealthService';
-import { getStudentByUserId } from '../services/studentService';
 
 // Legacy Assessment interface for compatibility - maps to MentalHealthAssessment
 export interface Assessment {
@@ -116,23 +115,19 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   const addAssessment = async (assessment: Omit<Assessment, 'id'>) => {
     try {
       console.log('Adding assessment to database:', assessment);
+        // CRITICAL FIX: Use logged-in user ID directly as studentId
+      let resolvedStudentId = user?.userId || 'anonymous';
       
-      // CRITICAL FIX: Resolve actual studentId from user's userId
-      let resolvedStudentId = 'anonymous';
+      console.log(`🔍 Starting assessment creation for user: ${user?.userId || 'no user'}`);
+      
       if (user?.userId) {
-        try {
-          const student = await getStudentByUserId(user.userId);
-          if (student) {
-            resolvedStudentId = student.studentId;
-            console.log(`✅ Resolved userId ${user.userId} to studentId ${resolvedStudentId}`);
-          } else {
-            console.warn(`⚠️ No student record found for userId: ${user.userId}`);
-            resolvedStudentId = user.userId; // Fallback to userId for backward compatibility
-          }
-        } catch (error) {
-          console.error('❌ Error resolving studentId:', error);
-          resolvedStudentId = user.userId; // Fallback to userId
-        }
+        // For students, use their userId directly as studentId
+        // The service will handle creating a student record if needed
+        resolvedStudentId = user.userId;
+        console.log(`✅ Using logged-in user ID as studentId: ${resolvedStudentId}`);
+      } else {
+        console.warn(`⚠️ No logged-in user found, using anonymous`);
+        resolvedStudentId = 'anonymous';
       }
         // Prepare the assessment data for API
       const assessmentData = {
