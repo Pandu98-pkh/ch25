@@ -9,9 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Clipboard,
   Trash2,
   User,
@@ -55,26 +52,10 @@ interface Assessment {
   };
 }
 
-// PHQ-9 severity levels
-const PHQ9_SEVERITY = [
-  { range: [0, 4], level: 'minimal', color: 'green' },
-  { range: [5, 9], level: 'mild', color: 'blue' },
-  { range: [10, 14], level: 'moderate', color: 'yellow' },
-  { range: [15, 19], level: 'moderately severe', color: 'orange' },
-  { range: [20, 27], level: 'severe', color: 'red' },
-];
 
-// GAD-7 severity levels
-const GAD7_SEVERITY = [
-  { range: [0, 4], level: 'minimal', color: 'green' },
-  { range: [5, 9], level: 'mild', color: 'blue' },
-  { range: [10, 14], level: 'moderate', color: 'yellow' },
-  { range: [15, 21], level: 'severe', color: 'red' },
-];
 
-export default function MentalHealthPage() {
-  const { t } = useLanguage();
-  const { user, isAdmin, isCounselor } = useUser();
+export default function MentalHealthPage() {  const { t } = useLanguage();
+  const { isAdmin, isCounselor } = useUser();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const navigate = useNavigate();
@@ -127,47 +108,6 @@ export default function MentalHealthPage() {
     }
   };
 
-  // Get PHQ-9 severity level
-  const getPHQ9SeverityLevel = (score: number) => {
-    return PHQ9_SEVERITY.find((s) => score >= s.range[0] && score <= s.range[1]) || PHQ9_SEVERITY[0];
-  };
-
-  // Get GAD-7 severity level
-  const getGAD7SeverityLevel = (score: number) => {
-    return GAD7_SEVERITY.find((s) => score >= s.range[0] && score <= s.range[1]) || GAD7_SEVERITY[0];
-  };
-
-  // Get color for severity level
-  const getSeverityColor = (score: number, type: string) => {
-    const severity = type === 'PHQ-9' ? getPHQ9SeverityLevel(score) : getGAD7SeverityLevel(score);
-    switch (severity.color) {
-      case 'green':
-        return { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' };
-      case 'blue':
-        return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' };
-      case 'yellow':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' };
-      case 'orange':
-        return { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200' };
-      case 'red':
-        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' };
-    }
-  };
-
-  const getRiskIcon = (trend?: string) => {
-    if (!trend) return <Minus className="h-4 w-4" />;
-
-    switch (trend) {
-      case 'improving':
-        return <TrendingDown className="h-4 w-4 text-green-500" />;
-      case 'worsening':
-        return <TrendingUp className="h-4 w-4 text-red-500" />;
-      default:
-        return <Minus className="h-4 w-4 text-blue-500" />;
-    }
-  };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -259,13 +199,7 @@ export default function MentalHealthPage() {
           <div className="h-96 bg-white rounded-xl border border-gray-200 shadow-sm"></div>
         </div>
       </div>
-    );
-  }
-
-  // Get latest assessments
-  const latestPHQ9 = assessments.find((a) => a.type === 'PHQ-9');
-  const latestGAD7 = assessments.find((a) => a.type === 'GAD-7');
-  const latestDASS21 = assessments.find((a) => a.type === 'DASS-21');
+    );  }
 
   // Admin View
   if (isAdmin) {
@@ -826,230 +760,80 @@ export default function MentalHealthPage() {
               </p>
             )}
           </div>
-        </div>
-
-        {/* PHQ-9 Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transform transition-all duration-300 hover:shadow-md hover:border-purple-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Brain className="h-6 w-6 text-purple-600" />
+        </div>        {/* Enhanced Integrated Mental Health Test Card */}
+        <div className="bg-gradient-to-br from-white to-emerald-50 p-6 rounded-xl shadow-lg border-2 border-emerald-200 transform transition-all duration-300 hover:shadow-xl hover:border-emerald-300 col-span-2 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full opacity-30 -mr-16 -mt-16"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-md">
+                  <Brain className="h-7 w-7 text-white" />
+                </div>
+                <div className="ml-4">
+                  <h2 className="text-xl font-bold text-gray-900">Comprehensive Mental Health Assessment</h2>
+                  <p className="text-sm text-gray-600">Unified evaluation combining PHQ-9, DASS-21, and GAD-7</p>
+                </div>
               </div>
-              <h2 className="ml-3 text-lg font-semibold text-gray-900">PHQ-9 Depression</h2>
+              <div className="bg-emerald-100 px-3 py-1 rounded-full">
+                <span className="text-xs font-semibold text-emerald-700">ALL-IN-ONE</span>
+              </div>
             </div>
-            {latestPHQ9 && (
-              <div
-                className={cn(
-                  'px-3 py-1 rounded-full text-xs font-medium',
-                  getSeverityColor(latestPHQ9.score, 'PHQ-9').bg,
-                  getSeverityColor(latestPHQ9.score, 'PHQ-9').text
-                )}
-              >
-                {getPHQ9SeverityLevel(latestPHQ9.score).level}
+
+            {/* Combined Assessment Overview */}
+            <div className="mb-6 grid grid-cols-3 gap-3">
+              <div className="bg-white p-3 rounded-lg border border-purple-200 shadow-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                  <span className="text-xs font-medium text-purple-700">Depression</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">PHQ-9 Questions</p>
               </div>
-            )}
-          </div>
-
-          {latestPHQ9 ? (
-            <div className="mb-4">
-              <div className="mb-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Latest Score</span>
-                  <span className="text-xl font-bold text-gray-900">{latestPHQ9.score}/27</span>
+              <div className="bg-white p-3 rounded-lg border border-indigo-200 shadow-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500 mr-2"></div>
+                  <span className="text-xs font-medium text-indigo-700">Anxiety</span>
                 </div>
-
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={cn(
-                      'h-2 rounded-full',
-                      latestPHQ9.score < 5
-                        ? 'bg-green-500'
-                        : latestPHQ9.score < 10
-                        ? 'bg-blue-500'
-                        : latestPHQ9.score < 15
-                        ? 'bg-yellow-500'
-                        : latestPHQ9.score < 20
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                    )}
-                    style={{ width: `${(latestPHQ9.score / 27) * 100}%` }}
-                  ></div>
+                <p className="text-xs text-gray-600 mt-1">GAD-7 Questions</p>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-teal-200 shadow-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-teal-500 mr-2"></div>
+                  <span className="text-xs font-medium text-teal-700">Stress</span>
                 </div>
+                <p className="text-xs text-gray-600 mt-1">DASS-21 Questions</p>
+              </div>
+            </div>
 
-                {latestPHQ9.mlPrediction && (
-                  <div className="flex items-center mt-3 text-sm">
-                    {getRiskIcon(latestPHQ9.mlPrediction.trend)}
-                    <span className="ml-1.5 text-gray-600">
-                      {latestPHQ9.mlPrediction.trend === 'improving'
-                        ? 'Improving'
-                        : latestPHQ9.mlPrediction.trend === 'stable'
-                        ? 'Stable'
-                        : 'Needs Attention'}
-                    </span>
+            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-emerald-800">
+                  <p className="font-semibold mb-2">🎯 Complete Mental Health Evaluation</p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <ul className="space-y-1">
+                      <li>• Sequential flow through all assessments</li>
+                      <li>• Holistic scoring system (0-100 scale)</li>
+                    </ul>
+                    <ul className="space-y-1">
+                      <li>• Personalized recommendations</li>
+                      <li>• 15-minute completion time</li>
+                    </ul>
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500 mb-4">No PHQ-9 assessments yet</p>
-          )}
 
-          <button
-            onClick={() => navigate('/app/mental-health/phq9-test')}
-            className="w-full flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg shadow-sm transform transition-all duration-200 hover:scale-[1.02]"
-          >
-            <Clipboard className="w-4 h-4 mr-2" />
-            Take PHQ-9 Depression Test
-          </button>
-        </div>
-
-        {/* GAD-7 Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transform transition-all duration-300 hover:shadow-md hover:border-indigo-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="p-3 bg-indigo-100 rounded-lg">
-                <Brain className="h-6 w-6 text-indigo-600" />
-              </div>
-              <h2 className="ml-3 text-lg font-semibold text-gray-900">GAD-7 Anxiety</h2>
-            </div>
-            {latestGAD7 && (
-              <div
-                className={cn(
-                  'px-3 py-1 rounded-full text-xs font-medium',
-                  getSeverityColor(latestGAD7.score, 'GAD-7').bg,
-                  getSeverityColor(latestGAD7.score, 'GAD-7').text
-                )}
-              >
-                {getGAD7SeverityLevel(latestGAD7.score).level}
-              </div>
-            )}
+            <button
+              onClick={() => navigate('/app/mental-health/integrated-test')}
+              className="w-full flex items-center justify-center px-6 py-4 text-base font-semibold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-700 hover:via-teal-700 hover:to-green-700 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+            >
+              <Brain className="w-5 h-5 mr-3" />
+              🧠 Take Comprehensive Assessment
+              <div className="ml-3 bg-white/20 px-2 py-1 rounded-full text-xs">NEW</div>
+            </button>
           </div>
-
-          {latestGAD7 ? (
-            <div className="mb-4">
-              <div className="mb-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Latest Score</span>
-                  <span className="text-xl font-bold text-gray-900">{latestGAD7.score}/21</span>
-                </div>
-
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={cn(
-                      'h-2 rounded-full',
-                      latestGAD7.score < 5
-                        ? 'bg-green-500'
-                        : latestGAD7.score < 10
-                        ? 'bg-blue-500'
-                        : latestGAD7.score < 15
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
-                    )}
-                    style={{ width: `${(latestGAD7.score / 21) * 100}%` }}
-                  ></div>
-                </div>
-
-                {latestGAD7.mlPrediction && (
-                  <div className="flex items-center mt-3 text-sm">
-                    {getRiskIcon(latestGAD7.mlPrediction.trend)}
-                    <span className="ml-1.5 text-gray-600">
-                      {latestGAD7.mlPrediction.trend === 'improving'
-                        ? 'Improving'
-                        : latestGAD7.mlPrediction.trend === 'stable'
-                        ? 'Stable'
-                        : 'Needs Attention'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 mb-4">No GAD-7 assessments yet</p>
-          )}
-
-          <button
-            onClick={() => navigate('/app/mental-health/gad7-test')}
-            className="w-full flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 rounded-lg shadow-sm transform transition-all duration-200 hover:scale-[1.02]"
-          >
-            <Clipboard className="w-4 h-4 mr-2" />
-            Take GAD-7 Anxiety Test
-          </button>
-        </div>
-
-        {/* DASS-21 Card */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transform transition-all duration-300 hover:shadow-md hover:border-teal-200">
-          <div className="flex items-center mb-4">
-            <div className="p-3 bg-teal-100 rounded-lg">
-              <Brain className="h-6 w-6 text-teal-600" />
-            </div>
-            <h2 className="ml-3 text-lg font-semibold text-gray-900">DASS-21 Assessment</h2>
-          </div>
-
-          {latestDASS21 && latestDASS21.subScores ? (
-            <div className="mb-4 space-y-3">
-              <div className="flex flex-col space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-500">Depression</span>
-                  <span
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-full',
-                      getSeverityColor(latestDASS21.subScores.depression, 'DASS-21').bg,
-                      getSeverityColor(latestDASS21.subScores.depression, 'DASS-21').text
-                    )}
-                  >
-                    {latestDASS21.subScores.depression}/42
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-500">Anxiety</span>
-                  <span
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-full',
-                      getSeverityColor(latestDASS21.subScores.anxiety, 'DASS-21').bg,
-                      getSeverityColor(latestDASS21.subScores.anxiety, 'DASS-21').text
-                    )}
-                  >
-                    {latestDASS21.subScores.anxiety}/42
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-gray-500">Stress</span>
-                  <span
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-full',
-                      getSeverityColor(latestDASS21.subScores.stress, 'DASS-21').bg,
-                      getSeverityColor(latestDASS21.subScores.stress, 'DASS-21').text
-                    )}
-                  >
-                    {latestDASS21.subScores.stress}/42
-                  </span>
-                </div>
-              </div>
-
-              {latestDASS21.mlPrediction && (
-                <div className="flex items-center text-sm">
-                  {getRiskIcon(latestDASS21.mlPrediction.trend)}
-                  <span className="ml-1.5 text-gray-600">
-                    {latestDASS21.mlPrediction.trend === 'improving'
-                      ? 'Improving'
-                      : latestDASS21.mlPrediction.trend === 'stable'
-                      ? 'Stable'
-                      : 'Needs Attention'}
-                  </span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 mb-4">No DASS-21 assessments yet</p>
-          )}
-
-          <button
-            onClick={() => navigate('/app/mental-health/dass21-test')}
-            className="w-full flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 rounded-lg shadow-sm transform transition-all duration-200 hover:scale-[1.02]"
-          >
-            <Clipboard className="w-4 h-4 mr-2" />
-            Take DASS-21 Assessment
-          </button>
         </div>
       </div>
 
@@ -1074,8 +858,13 @@ export default function MentalHealthPage() {
                   'assessments.getStarted',
                   'Take your first assessment to start tracking your mental health progress'
                 )}
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
+              </p>              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => navigate('/app/mental-health/integrated-test')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-lg shadow-sm transform transition-all duration-200 hover:scale-[1.02]"
+                >
+                  🧠 Take Comprehensive Test (All-in-One)
+                </button>
                 <button
                   onClick={() => navigate('/app/mental-health/phq9-test')}
                   className="px-3 py-1.5 text-sm text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"

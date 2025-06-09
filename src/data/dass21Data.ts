@@ -1,26 +1,89 @@
-// DASS-21 Questions array
+// DASS-21 Questions array with bilingual support
 export const DASS21_QUESTIONS = [
-  "I found it hard to wind down",
-  "I was aware of dryness of my mouth",
-  "I couldn't seem to experience any positive feeling at all",
-  "I experienced breathing difficulty (eg. excessively rapid breathing, breathlessness in the absence of physical exertion)",
-  "I found it difficult to work up the initiative to do things",
-  "I tended to over-react to situations",
-  "I experienced trembling (eg. in the hands)",
-  "I felt that I was using a lot of nervous energy",
-  "I was worried about situations in which I might panic and make a fool of myself",
-  "I felt that I had nothing to look forward to",
-  "I found myself getting agitated",
-  "I found it difficult to relax",
-  "I felt down-hearted and blue",
-  "I was intolerant of anything that kept me from getting on with what I was doing",
-  "I felt I was close to panic",
-  "I was unable to become enthusiastic about anything",
-  "I felt I wasn't worth much as a person",
-  "I felt that I was rather touchy",
-  "I was aware of the action of my heart in the absence of physical exertion (eg. sense of heart rate increase, heart missing a beat)",
-  "I felt scared without any good reason",
-  "I felt that life was meaningless"
+  {
+    id: "Saya merasa sulit untuk bersantai",
+    en: "I found it hard to wind down"
+  },
+  {
+    id: "Saya menyadari mulut saya kering",
+    en: "I was aware of dryness of my mouth"
+  },
+  {
+    id: "Saya sepertinya tidak bisa merasakan perasaan positif sama sekali",
+    en: "I couldn't seem to experience any positive feeling at all"
+  },
+  {
+    id: "Saya mengalami kesulitan bernapas (misalnya bernapas terlalu cepat, sesak napas tanpa aktivitas fisik)",
+    en: "I experienced breathing difficulty (eg. excessively rapid breathing, breathlessness in the absence of physical exertion)"
+  },
+  {
+    id: "Saya merasa sulit untuk memulai melakukan sesuatu",
+    en: "I found it difficult to work up the initiative to do things"
+  },
+  {
+    id: "Saya cenderung bereaksi berlebihan terhadap situasi",
+    en: "I tended to over-react to situations"
+  },
+  {
+    id: "Saya mengalami gemetar (misalnya di tangan)",
+    en: "I experienced trembling (eg. in the hands)"
+  },
+  {
+    id: "Saya merasa menggunakan banyak energi saraf",
+    en: "I felt that I was using a lot of nervous energy"
+  },
+  {
+    id: "Saya khawatir tentang situasi di mana saya mungkin panik dan membuat diri saya terlihat bodoh",
+    en: "I was worried about situations in which I might panic and make a fool of myself"
+  },
+  {
+    id: "Saya merasa tidak ada yang bisa saya nantikan",
+    en: "I felt that I had nothing to look forward to"
+  },
+  {
+    id: "Saya mendapati diri saya menjadi gelisah",
+    en: "I found myself getting agitated"
+  },
+  {
+    id: "Saya merasa sulit untuk rileks",
+    en: "I found it difficult to relax"
+  },
+  {
+    id: "Saya merasa sedih dan putus asa",
+    en: "I felt down-hearted and blue"
+  },
+  {
+    id: "Saya tidak toleran terhadap hal apapun yang menghalangi saya melakukan apa yang ingin saya lakukan",
+    en: "I was intolerant of anything that kept me from getting on with what I was doing"
+  },
+  {
+    id: "Saya merasa hampir panik",
+    en: "I felt I was close to panic"
+  },
+  {
+    id: "Saya tidak bisa menjadi antusias tentang apapun",
+    en: "I was unable to become enthusiastic about anything"
+  },
+  {
+    id: "Saya merasa tidak berharga sebagai seseorang",
+    en: "I felt I wasn't worth much as a person"
+  },
+  {
+    id: "Saya merasa agak sensitif",
+    en: "I felt that I was rather touchy"
+  },
+  {
+    id: "Saya menyadari detak jantung saya tanpa aktivitas fisik (misalnya merasakan detak jantung meningkat, jantung berdebar)",
+    en: "I was aware of the action of my heart in the absence of physical exertion (eg. sense of heart rate increase, heart missing a beat)"
+  },
+  {
+    id: "Saya merasa takut tanpa alasan yang jelas",
+    en: "I felt scared without any good reason"
+  },
+  {
+    id: "Saya merasa hidup tidak berarti",
+    en: "I felt that life was meaningless"
+  }
 ];
 
 // Categories for each question (used for scoring)
