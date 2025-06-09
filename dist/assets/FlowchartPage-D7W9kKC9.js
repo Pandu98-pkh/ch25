@@ -1,4 +1,4 @@
-import{j as e}from"./index-D-hSlWQg.js";import{r as R}from"./react-vendor-BzbKlFBU.js";import{U as D,b4 as $,S as T}from"./ui-vendor-BdkMv6fW.js";const V=()=>{const[t,u]=R.useState("student"),g={nodes:[{id:"start",label:`Student Login
+import{j as e}from"./index-T7Ct44Uh.js";import{r as R}from"./react-vendor-BzbKlFBU.js";import{U as D,b4 as $,S as T}from"./ui-vendor-BdkMv6fW.js";const V=()=>{const[t,u]=R.useState("student"),g={nodes:[{id:"start",label:`Student Login
 (Username/Password)`,type:"start",x:800,y:100},{id:"dashboard",label:`View Personal
 Dashboard`,type:"process",x:800,y:200},{id:"notifications",label:`Check Notifications
 & Alerts`,type:"process",x:800,y:300},{id:"choose",label:`Select Main
