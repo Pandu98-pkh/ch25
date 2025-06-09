@@ -3,6 +3,7 @@ import { MentalHealthAssessment } from '../types';
 import { useMentalHealthAssessments } from '../hooks/useMentalHealthAssessments';
 import { useUser } from './UserContext';
 import { createMentalHealthAssessment } from '../services/mentalHealthService';
+import { getStudentByUserId } from '../services/studentService';
 
 // Legacy Assessment interface for compatibility - maps to MentalHealthAssessment
 export interface Assessment {
@@ -111,27 +112,29 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   });
 
   // Transform database assessments to legacy format for compatibility
-  const assessments = dbAssessments.map(transformMentalHealthToAssessment);
-  const addAssessment = async (assessment: Omit<Assessment, 'id'>) => {
+  const assessments = dbAssessments.map(transformMentalHealthToAssessment);  const addAssessment = async (assessment: Omit<Assessment, 'id'>) => {
     try {
       console.log('Adding assessment to database:', assessment);
-        // CRITICAL FIX: Use logged-in user ID directly as studentId
-      let resolvedStudentId = user?.userId || 'anonymous';
       
-      console.log(`🔍 Starting assessment creation for user: ${user?.userId || 'no user'}`);
-      
-      if (user?.userId) {
-        // For students, use their userId directly as studentId
-        // The service will handle creating a student record if needed
-        resolvedStudentId = user.userId;
-        console.log(`✅ Using logged-in user ID as studentId: ${resolvedStudentId}`);
-      } else {
-        console.warn(`⚠️ No logged-in user found, using anonymous`);
-        resolvedStudentId = 'anonymous';
+      if (!user?.userId) {
+        throw new Error('User must be logged in to create assessments');
       }
-        // Prepare the assessment data for API
+      
+      console.log(`🔍 Starting assessment creation for user: ${user.userId}`);
+      
+      // CRITICAL FIX: Resolve user ID to actual student ID from database
+      const student = await getStudentByUserId(user.userId);
+      
+      if (!student) {
+        throw new Error(`No student record found for user ID: ${user.userId}. Please contact administrator.`);
+      }
+      
+      const resolvedStudentId = student.studentId;
+      console.log(`✅ Resolved user ID ${user.userId} to student ID: ${resolvedStudentId}`);
+      
+      // Prepare the assessment data for API
       const assessmentData = {
-        studentId: resolvedStudentId,
+        studentId: resolvedStudentId, // Using resolved student ID
         type: assessment.type,
         score: assessment.score,
         risk: assessment.risk,
@@ -158,10 +161,12 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
         severityLevels: assessment.severityLevels
       };
       
+      console.log('📤 Sending assessment data to API:', assessmentData);
+      
       // Save to database via API
       const result = await createMentalHealthAssessment(assessmentData);
       
-      console.log('Assessment saved successfully:', result);
+      console.log('✅ Assessment saved successfully:', result);
       
       // Refresh the assessments list to include the new one
       await refetch();

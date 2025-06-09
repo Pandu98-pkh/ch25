@@ -108,7 +108,8 @@ function App() {
                       />
                       <Route path="students/:id" element={<StudentDetail />} />
                       <Route path="sessions" element={<SessionsPage />} />
-                      <Route path="sessions/student/:id" element={<SessionsPage />} />                      <Route path="mental-health" element={<MentalHealthPage />} />
+                      <Route path="sessions/student/:id" element={<SessionsPage />} />                      
+                      <Route path="mental-health" element={<MentalHealthPage />} />
                       <Route path="mental-health/student/:id" element={<MentalHealthPage />} />
                       <Route path="mental-health/integrated-test" element={<IntegratedMentalHealthTestPage />} />
                       <Route path="behavior" element={<BehaviorPage />} />

@@ -2348,12 +2348,45 @@ def create_mental_health_assessment():
         
         cursor = connection.cursor()
         
+        # Extract studentId from request data (handles both camelCase and snake_case)
+        student_id = data.get('studentId') or data.get('student_id')
+        if not student_id:
+            return jsonify({'error': 'studentId is required'}), 400
+        
+        # Extract assessment type from request data (handles both camelCase and snake_case)
+        assessment_type = data.get('type') or data.get('assessment_type', 'mental-health')
+        
         # Generate assessment_id following the pattern: type-timestamp-studentid
         timestamp = str(int(time.time()))
-        student_id = data['student_id']
-        assessment_type = data['assessment_type']
         assessment_id = f"{assessment_type}-{timestamp}-{student_id}"
+          # For assessor_id, we need a valid user_id from the users table
+        # First try to find the user_id that corresponds to this student
+        assessor_query = """
+        SELECT u.user_id FROM users u 
+        JOIN students s ON u.user_id = s.user_id 
+        WHERE s.student_id = %s AND u.is_active = TRUE
+        """
+        cursor.execute(assessor_query, (student_id,))
+        assessor_result = cursor.fetchone()
         
+        if assessor_result:
+            assessor_id = assessor_result[0]
+        else:
+            # Fallback: use any active counselor or admin as assessor
+            cursor.execute("SELECT user_id FROM users WHERE role IN ('counselor', 'admin') AND is_active = TRUE LIMIT 1")
+            fallback_result = cursor.fetchone()
+            if fallback_result:
+                assessor_id = fallback_result[0]
+            else:
+                # Last resort: use the first active user
+                cursor.execute("SELECT user_id FROM users WHERE is_active = TRUE LIMIT 1")
+                last_resort = cursor.fetchone()
+                if last_resort:
+                    assessor_id = last_resort[0]
+                else:
+                    return jsonify({'error': 'No valid assessor found in database'}), 500
+        
+        # Prepare the insert query
         insert_query = """
         INSERT INTO mental_health_assessments 
         (assessment_id, student_id, assessment_type, score, risk_level, notes, date, category, 
@@ -2363,16 +2396,15 @@ def create_mental_health_assessment():
         
         values = (
             assessment_id,
-            data['student_id'],
-            data['assessment_type'],
-            data['score'],
-            data['risk_level'],
+            student_id,
+            assessment_type,
+            data.get('score', 0),
+            data.get('risk') or data.get('risk_level', 'unknown'),
             data.get('notes', ''),
             data.get('date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
-            data.get('category', 'self-assessment'),
-            data.get('assessor_id', 'system'),
-            data.get('responses'),
-            data.get('recommendations')
+            data.get('category', 'self-assessment'),            assessor_id,  # Use the valid assessor_id we found
+            json.dumps(data.get('responses', {})),
+            json.dumps(data.get('recommendations', []))
         )
         
         cursor.execute(insert_query, values)
@@ -2382,12 +2414,16 @@ def create_mental_health_assessment():
         connection.close()
         
         return jsonify({
-            'data': {'id': assessment_id, **data},
-            'status': 201
+            'id': assessment_id,
+            'studentId': student_id,
+            'student_id': student_id,
+            'type': assessment_type,
+            'assessment_type': assessment_type,
+            'status': 'created'
         }), 201
         
     except Exception as e:
-        print(f"Error creating assessment: {e}")
+        print(f"Error creating mental health assessment: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/mental-health/assessments/<assessment_id>', methods=['PUT'])

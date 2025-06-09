@@ -65,26 +65,29 @@ export const createMentalHealthAssessment = async (
 ): Promise<{ data: any; status: number }> => {
   try {
     console.log('✅ Saving mental health assessment to database via app.py - bypassing localStorage');
-      // Prepare data for API - use camelCase format that backend expects
+    
+    // Prepare data for API based on actual database schema
     const apiAssessmentData = {
-      studentId: assessmentData.studentId,  // Backend handles both camelCase and snake_case
+      student_id: assessmentData.studentId,
       score: assessmentData.score,
-      type: assessmentData.type,  // Backend maps this to assessment_type
-      risk: assessmentData.risk,  // Backend maps this to risk_level
+      assessment_type: assessmentData.type,
+      risk_level: assessmentData.risk,
       notes: assessmentData.notes || '',
       date: assessmentData.date,
       category: assessmentData.category || 'self-assessment',
-      // Map assessor to assessor field
-      assessor: typeof assessmentData.assessor === 'object' && assessmentData.assessor.id ? 
+      // Map assessor to assessor_id
+      assessor_id: typeof assessmentData.assessor === 'object' && assessmentData.assessor.id ? 
         assessmentData.assessor.id : 
         (typeof assessmentData.assessor === 'string' ? assessmentData.assessor : 'system'),
-      responses: assessmentData.responses || {},
-      recommendations: assessmentData.mlInsights?.recommendedActions || []
+      responses: assessmentData.responses ? JSON.stringify(assessmentData.responses) : null,
+      recommendations: assessmentData.mlInsights?.recommendedActions ? 
+        JSON.stringify(assessmentData.mlInsights.recommendedActions) : null
     };
-      console.log('📊 Assessment data prepared for database via app.py:', {
-      type: apiAssessmentData.type,
+    
+    console.log('📊 Assessment data prepared for database via app.py:', {
+      type: apiAssessmentData.assessment_type,
       score: apiAssessmentData.score,
-      studentId: apiAssessmentData.studentId,
+      student_id: apiAssessmentData.student_id,
       hasResponses: !!apiAssessmentData.responses
     });
     
@@ -180,10 +183,3 @@ export const getServiceStatus = () => {
     description: 'All mental health data operations use database exclusively via app.py backend - no localStorage or mock data'
   };
 };
-
-// ==================== DATABASE-ONLY MODE ====================
-// ALL MOCK DATA, LOCALSTORAGE CONSTANTS AND HELPER FUNCTIONS REMOVED
-// System now exclusively uses the database via app.py endpoints
-
-// No localStorage storage keys or mock data arrays
-// All functions communicate directly with the database through API calls

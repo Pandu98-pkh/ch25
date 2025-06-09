@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useAssessments } from '../contexts/AssessmentContext';
+import { useUser } from '../contexts/UserContext';
+import { getStudentByUserId } from '../services/studentService';
 
 // Import test data
 import { DASS21_QUESTIONS, QUESTION_CATEGORIES } from '../data/dass21Data';
@@ -110,7 +111,15 @@ enum TestPhase {
 
 export default function IntegratedMentalHealthTestPage() {
   const navigate = useNavigate();
-  const { addAssessment } = useAssessments();
+  const { user } = useUser();
+  
+  // Student ID resolution state for debugging
+  const [resolvedStudentId, setResolvedStudentId] = useState<string | null>(null);
+  const [studentResolutionError, setStudentResolutionError] = useState<string | null>(null);
+  
+  // Assessment submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   // Test state
   const [currentPhase, setCurrentPhase] = useState<TestPhase>(TestPhase.INFO);
@@ -123,12 +132,40 @@ export default function IntegratedMentalHealthTestPage() {
   
   // Exit confirmation state
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
-    // Timer (total 15 minutes for all tests)
+  
+  // Timer (total 15 minutes for all tests)
   const initialTime = 900; // 15 minutes
   const [timeRemaining, setTimeRemaining] = useState(initialTime);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
   const timerRef = useRef<number | null>(null);
+  
+  // Resolve user ID to student ID for debugging
+  useEffect(() => {
+    const resolveStudentId = async () => {
+      if (user?.id) {
+        try {
+          const student = await getStudentByUserId(user.id);
+          if (student) {
+            setResolvedStudentId(student.studentId);
+            setStudentResolutionError(null);
+          } else {
+            setResolvedStudentId(null);
+            setStudentResolutionError(`No student record found for user ID: ${user.id}`);
+          }
+        } catch (error) {
+          console.error('Error resolving student ID:', error);
+          setResolvedStudentId(null);
+          setStudentResolutionError(`Error resolving student ID: ${error}`);
+        }
+      } else {
+        setResolvedStudentId(null);
+        setStudentResolutionError('No user logged in');
+      }
+    };
+    
+    resolveStudentId();
+  }, [user?.id]);
   
   // Start countdown timer when test begins
   const startTimer = () => {
@@ -523,74 +560,130 @@ export default function IntegratedMentalHealthTestPage() {
     analysis += `Untuk diagnosis dan treatment plan yang akurat, konsultasi dengan\n`;
     analysis += `profesional kesehatan mental tetap diperlukan.\n`;    return analysis;
   };
-
-  // Submit all tests dengan mode tunggu
+  // Submit all tests with direct Flask API call
   const handleSubmitAllTests = async () => {
+    console.log('🔄 handleSubmitAllTests called!');
+    console.log('📝 Current responses:', {
+      phq9: phq9Responses,
+      dass21: dass21Responses,
+      gad7: gad7Responses
+    });
+    
     // Tampilkan mode processing
     setCurrentPhase(TestPhase.PROCESSING);
+    setIsSubmitting(true);
+    setSubmitError(null);
     
     // Simulasi waktu processing (2-3 detik)
     await new Promise(resolve => setTimeout(resolve, 2500));
     
-    const scores = calculateScores();
-    
-    // Create comprehensive assessment
-    const risk: 'low' | 'moderate' | 'high' = scores.overall >= 70 ? 'low' : scores.overall >= 55 ? 'moderate' : 'high';
-      // Flatten all responses into a single array
-    const allResponses = [
-      ...phq9Responses.map((value, index) => ({ 
-        questionId: index + 1, 
-        answer: value >= 0 ? value : 0,
-        category: 'phq9',
-        question: typeof PHQ9_QUESTIONS[index] === 'object' 
-          ? PHQ9_QUESTIONS[index].id 
-          : PHQ9_QUESTIONS[index]
-      })),
-      ...dass21Responses.map((value, index) => ({ 
-        questionId: PHQ9_QUESTIONS.length + index + 1, 
-        answer: value >= 0 ? value : 0,
-        category: QUESTION_CATEGORIES[index],
-        question: typeof DASS21_QUESTIONS[index] === 'object' 
-          ? DASS21_QUESTIONS[index].id 
-          : DASS21_QUESTIONS[index]
-      })),
-      ...gad7Responses.map((value, index) => ({ 
-        questionId: PHQ9_QUESTIONS.length + DASS21_QUESTIONS.length + index + 1, 
-        answer: value >= 0 ? value : 0,
-        category: 'gad7',
-        question: typeof GAD7_QUESTIONS[index] === 'object' 
-          ? GAD7_QUESTIONS[index].id 
-          : GAD7_QUESTIONS[index]
-      }))
-    ];// Generate comprehensive analysis
-    const detailedAnalysis = generateAnalysis(scores);
-    
-    const assessment = {
-      type: 'Integrated Mental Health',
-      score: scores.overall,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      risk,
-      notes: detailedAnalysis, // Save the full detailed analysis
-      responses: allResponses,
-      subScores: {
-        depression: scores.depression,
-        anxiety: scores.anxiety,
-        stress: scores.stress,
-        overall: scores.overall,
-        phq9: scores.phq9,
-        gad7: scores.gad7
-      },
-      mlPrediction: {
-        trend: scores.overall >= 70 ? 'stable' : scores.overall >= 55 ? 'stable' : 'worsening' as 'improving' | 'stable' | 'worsening',
-        confidence: 0.85,
-        nextPredictedScore: scores.overall
+    try {
+      // Resolve user ID to student ID
+      if (!user?.userId) {
+        throw new Error('User must be logged in to submit assessment');
       }
-    };    try {
-      await addAssessment(assessment);
+      
+      console.log(`🔍 Resolving user ID ${user.userId} to student ID...`);
+      const student = await getStudentByUserId(user.userId);
+      
+      if (!student) {
+        throw new Error(`No student record found for user ID: ${user.userId}. Please contact administrator.`);
+      }
+      
+      const studentId = student.studentId;
+      console.log(`✅ Resolved to student ID: ${studentId}`);
+      setResolvedStudentId(studentId);
+      
+      const scores = calculateScores();
+      console.log('📊 Calculated scores:', scores);
+      
+      // Create comprehensive assessment
+      const risk: 'low' | 'moderate' | 'high' = scores.overall >= 70 ? 'low' : scores.overall >= 55 ? 'moderate' : 'high';
+      
+      // Flatten all responses into a single array
+      const allResponses = [
+        ...phq9Responses.map((value, index) => ({ 
+          questionId: index + 1, 
+          answer: value >= 0 ? value : 0,
+          category: 'phq9',
+          question: typeof PHQ9_QUESTIONS[index] === 'object' 
+            ? PHQ9_QUESTIONS[index].id 
+            : PHQ9_QUESTIONS[index]
+        })),
+        ...dass21Responses.map((value, index) => ({ 
+          questionId: PHQ9_QUESTIONS.length + index + 1, 
+          answer: value >= 0 ? value : 0,
+          category: QUESTION_CATEGORIES[index],
+          question: typeof DASS21_QUESTIONS[index] === 'object' 
+            ? DASS21_QUESTIONS[index].id 
+            : DASS21_QUESTIONS[index]
+        })),
+        ...gad7Responses.map((value, index) => ({ 
+          questionId: PHQ9_QUESTIONS.length + DASS21_QUESTIONS.length + index + 1, 
+          answer: value >= 0 ? value : 0,
+          category: 'gad7',
+          question: typeof GAD7_QUESTIONS[index] === 'object' 
+            ? GAD7_QUESTIONS[index].id 
+            : GAD7_QUESTIONS[index]
+        }))
+      ];
+      
+      // Generate comprehensive analysis
+      const detailedAnalysis = generateAnalysis(scores);
+      
+      // Create assessment data in the format expected by Flask backend
+      const assessmentData = {
+        studentId: studentId,
+        type: 'Integrated Mental Health',
+        score: scores.overall,
+        risk: risk,
+        notes: detailedAnalysis,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        category: 'self-assessment',
+        // Convert responses to the expected format (questionId -> score mapping)
+        responses: allResponses.reduce((acc, resp) => {
+          acc[resp.questionId.toString()] = resp.answer;
+          return acc;
+        }, {} as Record<string, number>),
+        recommendations: [
+          `Follow-up assessment: ${scores.overall >= 70 ? '3 months' : scores.overall >= 55 ? '1 month' : '2 weeks'}`,
+          `Target improvement: +10-15 points in 3 months`,
+          `Success indicator: Improved daily functioning`,
+          ...(risk === 'high' ? ['Immediate professional consultation recommended'] : []),
+          ...(risk === 'moderate' ? ['Regular monitoring recommended'] : [])
+        ]
+      };
+      
+      console.log('🧠 Starting integrated assessment submission');
+      console.log('📊 Assessment data:', assessmentData);
+      
+      // Direct API call to Flask backend
+      const response = await fetch('http://localhost:5000/api/mental-health/assessments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(assessmentData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Assessment saved successfully:', result);
+      
+      // Proceed to results phase
       setCurrentPhase(TestPhase.RESULTS);
+      
     } catch (error) {
-      console.error('Error saving integrated assessment:', error);
+      console.error('❌ Error saving integrated assessment:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to save assessment');
+      // Still proceed to results to show the assessment data
       setCurrentPhase(TestPhase.RESULTS);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -832,21 +925,58 @@ export default function IntegratedMentalHealthTestPage() {
                     <li>• Jika hasil menunjukkan gejala yang signifikan, segera konsultasi dengan profesional kesehatan mental</li>
                     <li>• Dalam kondisi darurat atau ada pikiran untuk menyakiti diri, segera hubungi layanan krisis</li>
                   </ul>
-                </div>
+                </div>              </div>
+
+              {/* User Login Status */}
+              <div className="mb-8">
+                {user && user.id ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="text-lg font-semibold text-green-900 mb-2 flex items-center">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                      Status Login: Aktif
+                    </h4>
+                    <div className="text-green-800 text-sm space-y-1">
+                      <p><strong>Nama:</strong> {user.name}</p>
+                      <p><strong>Student ID:</strong> {user.id}</p>
+                      <p><strong>Role:</strong> {user.role}</p>
+                      <p className="text-green-700 mt-2">✓ Anda dapat memulai test sekarang</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="text-lg font-semibold text-red-900 mb-2 flex items-center">
+                      <X className="h-5 w-5 text-red-600 mr-2" />
+                      Status Login: Tidak Aktif
+                    </h4>
+                    <div className="text-red-800 text-sm">
+                      <p>Anda harus login terlebih dahulu sebelum dapat memulai test.</p>
+                      <p className="mt-2">Hasil test akan disimpan dengan Student ID Anda untuk tracking dan analisis.</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={() => {
+                    if (!user || !user.id) {
+                      alert('Silakan login terlebih dahulu sebelum memulai test!');
+                      return;
+                    }
                     setCurrentPhase(TestPhase.PHQ9);
                     startTimer();
                   }}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+                  disabled={!user || !user.id}
+                  className={`px-8 py-4 font-semibold rounded-lg shadow-lg transition-all duration-200 transform ${
+                    user && user.id 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 hover:scale-105' 
+                      : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  }`}
                 >
                   <div className="flex items-center justify-center">
                     <ArrowRight className="h-5 w-5 mr-2" />
-                    Mulai Test Sekarang
+                    {user && user.id ? 'Mulai Test Sekarang' : 'Login Required'}
                   </div>
                 </button>
                 <button
@@ -1311,8 +1441,27 @@ export default function IntegratedMentalHealthTestPage() {
                   {formatTime(timeRemaining)}
                 </div>
               </div>
+            </div>            {/* User Debug Info Panel */}
+            <div className="mt-4 bg-white/10 rounded-lg p-3 text-xs">
+              <div className="flex items-center justify-between text-purple-100">
+                <div className="flex items-center space-x-4">
+                  <span className="font-semibold">Debug Info:</span>
+                  <span>User ID: {user?.id || 'Not logged in'}</span>
+                  <span>Name: {user?.name || 'N/A'}</span>
+                  <span>Role: {user?.role || 'N/A'}</span>
+                </div>
+                <div className="text-yellow-200 font-semibold">
+                  {resolvedStudentId ? (
+                    <span className="text-green-200">✅ Student ID: {resolvedStudentId}</span>
+                  ) : studentResolutionError ? (
+                    <span className="text-red-200">❌ {studentResolutionError}</span>
+                  ) : (
+                    <span className="text-yellow-200">🔄 Resolving student ID...</span>
+                  )}
+                </div>
+              </div>
             </div>
-            
+
             {/* Progress bar */}
             <div className="mt-4">
               <div className="flex justify-between text-xs text-purple-100 mb-1">
