@@ -1,0 +1,23 @@
+# Netlify Redirects for CounselorHub SPA
+# This file handles client-side routing for React SPA
+
+# Handle SPA routing - redirect all non-API routes to index.html
+/*    /index.html   200
+
+# API proxy rules (if using Netlify functions)
+# /api/*  /.netlify/functions/:splat  200
+
+# Security headers for API endpoints
+/api/*  X-Frame-Options: DENY
+/api/*  X-Content-Type-Options: nosniff
+/api/*  X-XSS-Protection: 1; mode=block
+
+# Handle specific routes that should not be proxied
+/static/*  /static/:splat  200
+/assets/*  /assets/:splat  200
+/images/*  /images/:splat  200
+/favicon.ico  /favicon.ico  200
+/manifest.json  /manifest.json  200
+
+# Handle API calls to external backend (if needed)
+# /api/*  https://your-backend-domain.com/api/:splat  200

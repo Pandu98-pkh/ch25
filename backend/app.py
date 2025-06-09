@@ -20,7 +20,11 @@ import os
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# Konfigurasi CORS yang lebih spesifik untuk ngrok
+CORS(app, 
+     origins=['https://counselor-hub.netlify.app', 'http://localhost:3000'],
+     allow_headers=['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
