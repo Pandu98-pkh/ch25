@@ -316,10 +316,8 @@ export default function StudentDetail() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <TabsContent value="sessions" className="mt-0 focus:outline-none">
             <SessionsPage studentId={student.id} />
-          </TabsContent>
-
-          <TabsContent value="mental-health" className="mt-0 focus:outline-none">
-            <MentalHealthPage />
+          </TabsContent>          <TabsContent value="mental-health" className="mt-0 focus:outline-none">
+            <MentalHealthPage studentId={student.studentId || student.id} />
           </TabsContent>
 
           <TabsContent value="behavior" className="mt-0 focus:outline-none">

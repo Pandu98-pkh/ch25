@@ -17,6 +17,7 @@ import {
   Lock,
   Info,
   ShieldCheck,
+  X, // Add X icon for modal close button
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,6 +34,7 @@ interface Assessment {
   date: string;
   risk: 'low' | 'moderate' | 'high';
   notes?: string;
+  studentId?: string; // Added for admin/counselor table views
   responses?: {
     questionId: number;
     answer: number;
@@ -52,23 +54,160 @@ interface Assessment {
   };
 }
 
+interface MentalHealthPageProps {
+  studentId?: string; // Optional prop for filtering by specific student
+}
 
+// Delete Confirmation Modal Component
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  assessment: Assessment | null;
+  isDeleting: boolean;
+}
 
-export default function MentalHealthPage() {  const { t } = useLanguage();
-  const { isAdmin, isCounselor } = useUser();
+function DeleteConfirmationModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  assessment, 
+  isDeleting 
+}: DeleteConfirmationModalProps) {
+  if (!isOpen || !assessment) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-xl flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <Trash2 className="h-5 w-5 mr-2" />
+            Konfirmasi Hapus Assessment
+          </h3>
+          <button 
+            onClick={onClose}
+            disabled={isDeleting}
+            className="p-1 rounded-full hover:bg-white/20 text-white transition-colors disabled:opacity-50"
+            title="Tutup"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="flex items-start mb-4">
+            <div className="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 rounded-full flex items-center justify-center mr-3">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-lg font-medium text-gray-900 mb-2">
+                Apakah Anda yakin ingin menghapus assessment ini?
+              </h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Tindakan ini tidak dapat dibatalkan. Assessment akan dihapus secara permanen dari sistem.
+              </p>
+            </div>
+          </div>
+
+          {/* Assessment Details */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-500">Jenis Assessment:</span>
+                <span className="text-sm text-gray-900">{assessment.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-500">Skor:</span>
+                <span className="text-sm text-gray-900">{assessment.score}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-500">Tanggal:</span>
+                <span className="text-sm text-gray-900">
+                  {format(new Date(assessment.date), 'dd MMM yyyy')}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-500">Level Risiko:</span>
+                <span className={cn(
+                  'px-2 py-1 text-xs font-medium rounded-full',
+                  assessment.risk === 'low' ? 'bg-green-100 text-green-800' :
+                  assessment.risk === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                )}>
+                  {assessment.risk === 'low' ? 'Rendah' : 
+                   assessment.risk === 'moderate' ? 'Sedang' : 'Tinggi'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Hapus Assessment
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MentalHealthPage({ studentId }: MentalHealthPageProps = {}) {
+  const { t } = useLanguage();
+  const { user, isAdmin, isCounselor } = useUser();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+  // Add modal states
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    assessment: Assessment | null;
+  }>({
+    isOpen: false,
+    assessment: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
-  // Use the new database hook - show all assessments without filter
+  
+  // Implement role-based filtering:
+  // - If studentId prop is provided, use it (for student detail view)
+  // - Students see only their own data
+  // - Admins and counselors see all data
+  const studentIdFilter = studentId 
+    ? studentId // Use specific student ID from props
+    : (isAdmin || isCounselor) ? undefined : user?.userId;
+  
   const {
     assessments: dbAssessments,
     loading,
     error,
     refetch
   } = useMentalHealthAssessments({ 
-    // No studentId filter - show all assessments
+    studentId: studentIdFilter
   });
-
   // Transform database assessments to legacy format for compatibility
   const assessments = dbAssessments.map((assessment): Assessment => ({
     id: assessment.id,
@@ -88,7 +227,9 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
       nextPredictedScore: undefined
     } : undefined,
     recommendations: assessment.mlInsights?.recommendedActions,
-    subScores: (assessment as any).subScores
+    subScores: (assessment as any).subScores,
+    // ✅ IMPORTANT: Include studentId for admin/counselor table views
+    studentId: assessment.studentId
   }));
   const deleteAssessment = async (id: string) => {
     try {
@@ -124,9 +265,7 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
 
   const handleDeleteAssessment = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(t('confirmation.deleteAssessment', 'Are you sure you want to delete this assessment?'))) {
-      deleteAssessment(id);
-    }
+    setDeleteConfirmModal({ isOpen: true, assessment: assessments.find(a => a.id === id) || null });
   };
 
   const handleViewDetails = (assessment: Assessment, e: React.MouseEvent) => {
@@ -308,9 +447,7 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Admin Assessment List */}
+        </div>        {/* Admin Assessment List - Table View like Counselor */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
@@ -318,124 +455,158 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
               {t('assessments.recentAssessments', 'Recent Assessments')}
             </h2>
 
-            {assessments.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <AlertCircle className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-base font-medium text-gray-900 mb-1">
-                  {t('assessments.noAssessments', 'No assessments yet')}
-                </h3>
-                <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-                  {t(
-                    'assessments.adminGetStarted',
-                    'Encourage students to complete assessments to start monitoring mental health'
-                  )}
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {assessments.slice(0, 5).map((assessment) => {
-                  const riskStyle = getRiskColor(assessment.risk);
-                  return (
-                    <div
-                      key={assessment.id}
-                      className="py-4 first:pt-0 last:pb-0 group transition-colors hover:bg-gray-50 rounded-lg cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === assessment.id ? null : assessment.id)}
+            <div className="overflow-x-auto scrollbar-light">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div
-                            className={cn(
-                              'p-2.5 rounded-lg transform transition-transform group-hover:scale-110',
-                              riskStyle.bg
-                            )}
-                          >
-                            <riskStyle.icon className="h-5 w-5" />
-                          </div>
-                          <div className="ml-4">
-                            <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700 transition-colors">
-                              {assessment.type} - Score: {assessment.score}
-                            </h4>
-                            <div className="flex items-center mt-1 text-xs text-gray-500">
-                              <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                              {format(new Date(assessment.date), 'MMMM d, yyyy')}
-                            </div>
-                          </div>
+                      {t('assessments.student', 'Student')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {t('assessments.type', 'Type')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {t('assessments.date', 'Date')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {t('assessments.score', 'Score')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {t('assessments.risk', 'Risk')}
+                    </th>
+                    <th scope="col" className="relative px-6 py-3">
+                      <span className="sr-only">{t('actions.view', 'View')}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {assessments.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center">
+                        <div className="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <AlertCircle className="h-8 w-8 text-gray-400" />
                         </div>
-                        <div className="text-gray-400 group-hover:text-indigo-500 transform transition-transform duration-300">
-                          {expandedId === assessment.id ? (
-                            <ChevronUp className="h-5 w-5" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5" />
-                          )}
-                        </div>
-                      </div>
+                        <h3 className="text-base font-medium text-gray-900 mb-1">
+                          {t('assessments.noAssessments', 'No assessments yet')}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {t('assessments.adminGetStarted', 'Encourage students to complete assessments to start monitoring mental health')}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    assessments.slice(0, 10).map((assessment) => {
+                      const riskColor =
+                        assessment.risk === 'low'
+                          ? 'bg-green-100 text-green-800'
+                          : assessment.risk === 'moderate'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800';
 
-                      {expandedId === assessment.id && (
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 animate-fadeIn">
-                          {/* Admin-specific assessment details */}
-                          <div className="grid grid-cols-2 gap-4 mb-3">
-                            <div>
-                              <p className="text-xs font-medium text-gray-500">
-                                {t('assessments.student', 'Student')}
-                              </p>
-                              <p className="mt-1 text-sm text-gray-900">John Doe</p>
+                      return (
+                        <tr key={assessment.id} className="hover:bg-gray-50">                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <User className="h-4 w-4 text-purple-600" />
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">
+                                  Student ID: {assessment.studentId || 'Unknown'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Assessment ID: {assessment.id.slice(-8)}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-medium text-gray-500">{t('assessments.score', 'Score')}</p>
-                              <p className="mt-1 text-sm text-gray-900">{assessment.score}</p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{assessment.type}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {format(new Date(assessment.date), 'MMM d, yyyy')}
                             </div>
-                            <div>
-                              <p className="text-xs font-medium text-gray-500">{t('assessments.date', 'Date')}</p>
-                              <p className="mt-1 text-sm text-gray-900">
-                                {format(new Date(assessment.date), 'MMMM d, yyyy')}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-medium text-gray-500">{t('assessments.risk', 'Risk Level')}</p>
-                              <p
-                                className={cn(
-                                  'mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                  riskStyle.bg,
-                                  riskStyle.text
-                                )}
-                              >
-                                {t(`risk.${assessment.risk}`, assessment.risk)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 flex justify-end">
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{assessment.score}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${riskColor}`}
+                            >
+                              {t(`risk.${assessment.risk}`, assessment.risk)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                              className="text-indigo-600 hover:text-indigo-900 font-medium mr-4"
                               onClick={(e) => handleViewDetails(assessment, e)}
                             >
-                              {t('actions.viewDetails', 'View Full Details')}
-                              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                              {t('actions.view', 'View')}
                             </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {assessments.length > 5 && (
-                  <div className="pt-4 text-center">
-                    <button
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                      onClick={() => {
-                        /* View all assessments */
-                      }}
-                    >
-                      {t('assessments.viewAll', 'View all assessments')} ({assessments.length})
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                            <button
+                              className="text-red-600 hover:text-red-900 font-medium"
+                              onClick={(e) => handleDeleteAssessment(assessment.id, e)}
+                            >
+                              {t('actions.delete', 'Delete')}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>        {/* Admin Info Panel like Counselor */}
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start mt-6">
+          <Info className="h-5 w-5 text-purple-600 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-purple-800">{t('mentalHealth.adminInfo', 'Administrator Information')}</h3>
+            <p className="mt-1 text-sm text-purple-700">
+              {t(
+                'mentalHealth.adminMessage',
+                'You have full access to all student mental health assessments. Use this data to monitor overall school mental health trends and identify students who may need additional support.'
+              )}
+            </p>
           </div>
         </div>
+
+        {/* Detail Modal */}
+        {selectedAssessment && (
+          <AssessmentDetailView assessment={selectedAssessment} onClose={() => setSelectedAssessment(null)} />
+        )}
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal
+          isOpen={deleteConfirmModal.isOpen}
+          onClose={() => setDeleteConfirmModal({ isOpen: false, assessment: null })}
+          onConfirm={async () => {
+            if (deleteConfirmModal.assessment) {
+              setIsDeleting(true);
+              await deleteAssessment(deleteConfirmModal.assessment.id);
+              setDeleteConfirmModal({ isOpen: false, assessment: null });
+              setIsDeleting(false);
+            }
+          }}
+          assessment={deleteConfirmModal.assessment}
+          isDeleting={isDeleting}
+        />
       </div>
     );
   }
@@ -628,15 +799,14 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
                           : 'bg-red-100 text-red-800';
 
                       return (
-                        <tr key={assessment.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <tr key={assessment.id} className="hover:bg-gray-50">                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                                 <User className="h-4 w-4 text-indigo-600" />
                               </div>
                               <div className="ml-3">
                                 <div className="text-sm font-medium text-gray-900">
-                                  Student ID: {assessment.id.slice(0, 8)}
+                                  Student ID: {assessment.studentId || 'Unknown'}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   Assessment ID: {assessment.id.slice(-8)}
@@ -684,9 +854,7 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
               </table>
             </div>
           </div>
-        </div>
-
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start">
+        </div>        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start">
           <Info className="h-5 w-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0" />
           <div>
             <h3 className="font-medium text-indigo-800">{t('mentalHealth.counselorInfo', 'Counselor Information')}</h3>
@@ -698,6 +866,11 @@ export default function MentalHealthPage() {  const { t } = useLanguage();
             </p>
           </div>
         </div>
+
+        {/* Detail Modal */}
+        {selectedAssessment && (
+          <AssessmentDetailView assessment={selectedAssessment} onClose={() => setSelectedAssessment(null)} />
+        )}
       </div>
     );
   }

@@ -3592,9 +3592,12 @@ def create_behavior_record():
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
     
-    cursor = None
+    cursor = None    
     try:
         data = request.get_json()
+        
+        # Debug: Log the incoming data
+        logger.info(f"Creating behavior record with data: {data}")
         
         # Validate required fields
         required_fields = ['studentId', 'date', 'type', 'description']
@@ -3614,7 +3617,7 @@ def create_behavior_record():
             INSERT INTO behavior_records 
             (record_id, student_id, date, behavior_type, category, description, severity, action_taken, reporter_id, follow_up_required)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """        
+        """          
         values = (
             record_id,
             data['studentId'],
@@ -3624,7 +3627,7 @@ def create_behavior_record():
             data['description'],
             data.get('severity', 'neutral'),
             data.get('actionTaken') or data.get('action_taken', ''),  # Support both camelCase and snake_case
-            data.get('reporter_id', 'ADM-2025-001'),  # Default to valid admin user
+            data.get('reporter', {}).get('id') or data.get('reporter_id', 'ADM-2025-001'),  # Use reporter.id from frontend, fallback to reporter_id or default
             data.get('follow_up_required', False)
         )
         cursor.execute(insert_query, values)

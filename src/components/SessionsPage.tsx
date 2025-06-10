@@ -266,7 +266,6 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
     setSelectedSession(session);
     setShowEditModal(true);
   };
-
   const handleUpdateSession = async (updatedSession: Omit<CounselingSession, 'id'>) => {
     try {
       if (!selectedSession) return;
@@ -276,11 +275,16 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       // Call the API to update the session
       const response = await updateSession(selectedSession.id, updatedSession);
       
-      // Update local state with the response data
+      // Update local state with the response data, preserving original date if not explicitly changed
       setSessions(prevSessions => 
         prevSessions.map(session => 
           session.id === selectedSession.id 
-            ? response.data
+            ? {
+                ...session, // Keep original session data
+                ...response.data, // Apply updates from response
+                // Preserve original date if the update didn't change it
+                date: updatedSession.date || session.date
+              }
             : session
         )
       );
@@ -303,18 +307,21 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
     setRejectionReason('');
     setShowRejectionModal(true);
   };
-
   const handleApproveSession = async () => {
     if (!sessionToApprove || !user?.userId) return;
     
     try {
       const response = await approveSession(sessionToApprove.id, user.userId);
       
-      // Update local state with the approved session
+      // Update local state with the approved session, preserving original date
       setSessions(prevSessions => 
         prevSessions.map(session => 
           session.id === sessionToApprove.id 
-            ? response.data
+            ? {
+                ...session, // Keep original session data
+                ...response.data, // Apply updates from response
+                date: session.date // Explicitly preserve original date
+              }
             : session
         )
       );
@@ -326,18 +333,21 @@ export default function SessionsPage({ studentId }: SessionsPageProps) {
       // Optionally show an error message to the user
     }
   };
-
   const handleRejectSession = async () => {
     if (!sessionToApprove || !rejectionReason.trim() || !user?.userId) return;
     
     try {
       const response = await rejectSession(sessionToApprove.id, user.userId, rejectionReason);
       
-      // Update local state with the rejected session
+      // Update local state with the rejected session, preserving original date
       setSessions(prevSessions => 
         prevSessions.map(session => 
           session.id === sessionToApprove.id 
-            ? response.data
+            ? {
+                ...session, // Keep original session data
+                ...response.data, // Apply updates from response
+                date: session.date // Explicitly preserve original date
+              }
             : session
         )
       );
@@ -1813,22 +1823,34 @@ interface SessionFormProps {
   currentUserId?: string;
 }
 
-function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', currentUserId }: SessionFormProps) {
-  const initialDate = initialData?.date ? parseISO(initialData.date) : new Date();
+function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', currentUserId }: SessionFormProps) {  // Helper function to get next available date (not Sunday, can be today)
+  const getNextAvailableDate = () => {
+    let nextDate = new Date(); // Start with today
+    
+    // If today is Sunday, move to Monday
+    while (nextDate.getDay() === 0) {
+      nextDate = addDays(nextDate, 1);
+    }
+    
+    return nextDate;
+  };
+
+  const initialDate = initialData?.date ? parseISO(initialData.date) : getNextAvailableDate();
 
   const initialTime = initialData?.date 
     ? format(initialDate, 'HH:mm')
-    : '09:00';
+    : '--:--';
 
   const initialDateString = initialData?.date 
     ? format(initialDate, 'yyyy-MM-dd')
-    : format(new Date(), 'yyyy-MM-dd');
+    : format(getNextAvailableDate(), 'yyyy-MM-dd');
 
   // Set initial form data based on user role
   const getInitialFormData = () => {
+    const nextAvailableDate = getNextAvailableDate();
     const baseData = {
       studentId: initialData?.studentId || '',
-      date: initialData?.date || format(new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+      date: initialData?.date || format(nextAvailableDate, "yyyy-MM-dd'T'09:00:ss.SSS'Z'"),
       duration: initialData?.duration || 60,
       notes: initialData?.notes || '',
       type: initialData?.type || 'academic',
@@ -1872,10 +1894,13 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
   const [counselors, setCounselors] = useState<Counselor[]>([]);
   const [loadingCounselors, setLoadingCounselors] = useState(true);
   const [counselorsError, setCounselorsError] = useState<string | null>(null);
-
   // State for schedule conflict validation
   const [conflictError, setConflictError] = useState<string | null>(null);
   const [validatingConflict, setValidatingConflict] = useState(false);
+
+  // State for alert modal
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   // Function to check for schedule conflicts
   const checkScheduleConflict = useCallback(async (sessionData: Omit<CounselingSession, 'id'>) => {
@@ -1997,17 +2022,55 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
         }
       }));
     }
-  }, [loadingCounselors, counselors, formData.counselor?.id]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  }, [loadingCounselors, counselors, formData.counselor?.id]);  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
     if (name === 'time') {
+      // Validate time if today is selected
+      if (dateDisplay === format(new Date(), 'yyyy-MM-dd')) {
+        const currentTime = format(new Date(), 'HH:mm');
+        if (value <= currentTime) {
+          setAlertMessage('Waktu tidak boleh lebih awal dari waktu sekarang jika memilih hari yang sama.');
+          setShowAlertModal(true);
+          return;
+        }
+      }
       setTimeValue(value);
       updateDateTime(dateDisplay, value);
     } else if (name === 'date') {
+      // Validate selected date
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+      
+      // Check if selected date is in the past (before today)
+      if (selectedDate < today) {
+        setAlertMessage('Sessions cannot be scheduled for past dates. Please select today or a future date.');
+        setShowAlertModal(true);
+        return;
+      }
+      
+      // Check if selected date is a Sunday (day 0)
+      if (selectedDate.getDay() === 0) {
+        setAlertMessage('Sessions cannot be scheduled on Sundays. Please select a different date.');
+        setShowAlertModal(true);
+        return;
+      }
+      
       setDateDisplay(value);
-      updateDateTime(value, timeValue);
+      // If selecting today, validate current time
+      if (value === format(new Date(), 'yyyy-MM-dd')) {
+        const currentTime = format(new Date(), 'HH:mm');
+        if (timeValue <= currentTime) {
+          const nextHour = format(addDays(setHours(new Date(), new Date().getHours() + 1), 0), 'HH:mm');
+          setTimeValue(nextHour);
+          updateDateTime(value, nextHour);
+        } else {
+          updateDateTime(value, timeValue);
+        }
+      } else {
+        updateDateTime(value, timeValue);
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -2252,9 +2315,7 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
               </div>
             </div>
           </div>
-        )}
-
-        <div>
+        )}        <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
             Date *
           </label>
@@ -2264,12 +2325,14 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
             name="date"
             value={dateDisplay}
             onChange={handleInputChange}
+            min={format(new Date(), 'yyyy-MM-dd')} // Minimum date is today
             required
             className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
           />
-        </div>
-
-        <div>
+          <p className="mt-1 text-xs text-gray-500">
+            Sessions can be scheduled from today onwards, but not on Sundays. If selecting today, time must be after current time.
+          </p>
+        </div>        <div>
           <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
             Time * (7:00 AM - 3:00 PM)
           </label>
@@ -2279,13 +2342,20 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
             name="time"
             value={timeValue}
             onChange={handleInputChange}
-            min="07:00"
+            min={dateDisplay === format(new Date(), 'yyyy-MM-dd') 
+              ? (() => {
+                  const currentTime = format(new Date(), 'HH:mm');
+                  return currentTime > '07:00' ? currentTime : '07:00';
+                })()
+              : '07:00'}
             max="15:00"
             required
             className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500"
           />
           {timeValue < "07:00" || timeValue > "15:00" ? (
             <p className="mt-1 text-sm text-red-600">Please select a time between 7:00 AM and 3:00 PM</p>
+          ) : dateDisplay === format(new Date(), 'yyyy-MM-dd') && timeValue <= format(new Date(), 'HH:mm') ? (
+            <p className="mt-1 text-sm text-red-600">Time must be after current time when selecting today</p>
           ) : null}
         </div>
 
@@ -2360,9 +2430,7 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
             placeholder="Enter next steps here..."
           />
         </div>
-      )}
-
-      <div className="flex justify-end space-x-3 pt-4">
+      )}      <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
@@ -2378,6 +2446,51 @@ function SessionForm({ initialData, onSubmit, onCancel, userRole = 'admin', curr
           {validatingConflict ? 'Checking availability...' : 'Save'}
         </button>
       </div>
+
+      {/* Alert Modal */}
+      {showAlertModal && (
+        <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-[200] transition-all duration-300 ease-in-out">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all"
+            style={{animation: 'modalFadeIn 0.3s ease-out'}}
+          >
+            <div className="relative">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <h3 className="text-lg font-medium text-white flex items-center">
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Validation Error
+                </h3>
+              </div>
+
+              <div className="p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-gray-700">
+                      {alertMessage}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => setShowAlertModal(false)}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

@@ -139,7 +139,6 @@ export default function BehaviorPage({ studentId }: BehaviorPageProps) {
       setLoadingStudents(false);
     }
   }, [studentId, isStudent]);
-
   // Load behavior records
   const loadRecords = useCallback(async () => {
     try {
@@ -149,12 +148,16 @@ export default function BehaviorPage({ studentId }: BehaviorPageProps) {
       const { clearTimeout } = createAbortController(15000);
 
       let response;
-      if (isStudent && selectedStudentId) {
-        // For students, load only their records
+      // Always filter by student ID if available
+      if (selectedStudentId) {
+        // Load records for specific student
         response = await getBehaviorRecords(selectedStudentId);
+      } else if (isStudent && user?.id) {
+        // For students without selectedStudentId, use their own ID
+        response = await getBehaviorRecords(user.id);
       } else {
-        // For non-students (admin/teachers), load all records from database
-        response = await getBehaviorRecords('', {}, 1); // Empty string means fetch all records
+        // Only load all records if no specific student is selected
+        response = await getBehaviorRecords('', {}, 1);
       }
       
       clearTimeout();
@@ -178,11 +181,10 @@ export default function BehaviorPage({ studentId }: BehaviorPageProps) {
         setError(t('errors.loadingRecords') || 'Gagal memuat data');
       }
       
-      setRecords([]);
-    } finally {
+      setRecords([]);    } finally {
       setLoading(false);
     }
-  }, [selectedStudentId, isStudent, t]);
+  }, [selectedStudentId, isStudent, user?.id, t]);
 
   // Create a new behavior record
   const handleCreateRecord = async (e: React.FormEvent) => {
@@ -199,16 +201,14 @@ export default function BehaviorPage({ studentId }: BehaviorPageProps) {
     }
 
     try {
-      setIsSubmitting(true);
-
-      const recordToCreate: Omit<BehaviorRecord, 'id'> = {
+      setIsSubmitting(true);      const recordToCreate: Omit<BehaviorRecord, 'id'> = {
         studentId: newRecord.studentId,
         date: new Date().toISOString().split('T')[0],
         type: newRecord.severity === 'positive' ? 'positive' : 'negative',
         description: newRecord.description,
         category: newRecord.category as 'attendance' | 'discipline' | 'participation' | 'social',
         severity: newRecord.severity,
-        reporter: { id: 'system', name: 'System' },
+        reporter: { id: user?.userId || 'system', name: user?.name || 'System' },
         ...(newRecord.actionTaken ? { actionTaken: newRecord.actionTaken } : {}),
       };
 
@@ -1213,12 +1213,24 @@ export default function BehaviorPage({ studentId }: BehaviorPageProps) {
               <div>
                 <span className="text-sm font-medium text-gray-700">{t('behavior.date') || 'Date'}:</span>
                 <span className="block text-sm text-gray-900">{format(new Date(selectedRecord.date), 'PPP')}</span>
-              </div>
-              <div>
+              </div>              <div>
                 <span className="text-sm font-medium text-gray-700">{t('behavior.student') || 'Student'}:</span>
-                <span className="block text-sm text-gray-900">
-                  {students.find(s => s.id === selectedRecord.studentId)?.name || selectedRecord.studentId}
-                </span>
+                <div className="mt-1">
+                  <div className="text-sm font-medium text-gray-900">
+                    {students.find(s => s.id === selectedRecord.studentId)?.name || selectedRecord.student?.name || selectedRecord.studentId}
+                  </div>
+                  {(() => {
+                    const student = students.find(s => s.id === selectedRecord.studentId);
+                    if (student && (student.tingkat || student.kelas || student.grade || student.class)) {
+                      return (
+                        <div className="text-sm text-gray-600">
+                          {student.tingkat || student.grade} {student.kelas || student.class}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-700">{t('behavior.category') || 'Category'}:</span>

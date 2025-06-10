@@ -68,6 +68,7 @@ export const getBehaviorRecords = async (
 export const createBehaviorRecord = async (record: Omit<BehaviorRecord, 'id'>): Promise<BehaviorRecord> => {
   try {
     if (FORCE_USE_DATABASE || !useMockData) {
+      console.log('Creating behavior record with data:', record);
       const response = await api.post('/behavior-records', record);
       return response.data;
     }
