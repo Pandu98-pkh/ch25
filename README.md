@@ -413,8 +413,8 @@ graph TB
 
 ### 🎓 **Academic Information**
 **Course**: Pemrograman Lanjut  
-**Institution**: [University Name]  
-**Semester**: [Semester/Year]  
+**Institution**: Telkom University
+**Semester**: 6
 
 </div>
 
@@ -428,7 +428,7 @@ graph TB
 ![Code Quality](https://img.shields.io/badge/Code%20Quality-Excellent-blue?style=for-the-badge&logo=code)
 ![Documentation](https://img.shields.io/badge/Documentation-Complete-orange?style=for-the-badge&logo=book)
 
-**🎉 Total Development Time**: [Project Duration]  
+**🎉 Total Development Time**: 2 Bulan 
 **📊 Final Codebase**: 35,466+ lines across multiple technologies  
 **🏆 Achievement**: Full-featured mental health counseling platform
 
