@@ -534,9 +534,9 @@ Setelah setup database berhasil, gunakan kredensial berikut untuk login:
 
 | Role | Username | Password |
 |------|----------|----------|
-| **Admin** | `admin` | `admin123` |
-| **Konselor** | `konselor1` | `konselor123` |
-| **Siswa** | `siswa1` | `siswa123` |
+| **Admin** | `admin` | `password123` |
+| **Konselor** | `konselor1` | `password123` |
+| **Siswa** | `siswa1` | `password123` |
 
 ### 📁 **7. Struktur Project**
 ```
