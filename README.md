@@ -437,3 +437,173 @@ graph TB
 *📝 Dokumen ini menggambarkan implementasi lengkap dari sistem **Counselor Hub** sebagai platform konseling daring modern yang menggabungkan teknologi web terdepan dengan metodologi psikologi profesional untuk mendukung kesehatan mental di lingkungan pendidikan.*
 
 </div>
+
+---
+
+## 🚀 **Panduan Instalasi & Setup**
+
+<div align="center">
+
+### 📋 **System Requirements**
+![Node.js](https://img.shields.io/badge/Node.js-18.x+-green?style=flat-square&logo=nodedotjs)
+![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)
+![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange?style=flat-square&logo=mysql)
+
+</div>
+
+### 🔧 **Prerequisites**
+Pastikan sistem Anda memiliki software berikut:
+- **Node.js** (versi 18.x atau lebih baru)
+- **Python** (versi 3.8 atau lebih baru)
+- **MySQL Server** (versi 8.0 atau lebih baru)
+- **Git** untuk cloning repository
+
+### 📥 **1. Clone Repository**
+```bash
+git clone https://github.com/your-username/counselor-hub.git
+cd counselor-hub
+```
+
+### 🗄️ **2. Database Setup**
+```bash
+# Masuk ke MySQL console
+mysql -u root -p
+
+# Jalankan script database (pastikan MySQL server berjalan)
+# Keluar dari MySQL console terlebih dahulu (ketik 'exit')
+
+# Setup database menggunakan Python script
+cd backend
+python create_counselorhub_database.py
+```
+
+### ⚙️ **3. Environment Configuration**
+```bash
+# Buat file .env di folder backend (opsional)
+# Sesuaikan konfigurasi database di backend/app.py jika diperlukan
+
+# Default database configuration:
+# HOST: localhost
+# USER: root  
+# PASSWORD: (sesuai password MySQL Anda)
+# DATABASE: counselorhub
+# PORT: 3306
+```
+
+### 🐍 **4. Backend Setup (Python Flask)**
+```bash
+# Masuk ke folder backend
+cd backend
+
+# Buat virtual environment
+python -m venv venv
+
+# Aktivasi virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Jalankan Flask server
+python app.py
+```
+**Backend akan running di**: `http://localhost:5000`
+
+### ⚛️ **5. Frontend Setup (React/TypeScript)**
+```bash
+# Buka terminal baru dan masuk ke root directory
+cd counselor-hub
+
+# Install dependencies
+npm install
+# atau menggunakan yarn:
+yarn install
+
+# Jalankan development server
+npm run dev
+# atau menggunakan yarn:
+yarn dev
+```
+**Frontend akan running di**: `http://localhost:5173`
+
+### 🔐 **6. Default Login Credentials**
+Setelah setup database berhasil, gunakan kredensial berikut untuk login:
+
+| Role | Username | Password |
+|------|----------|----------|
+| **Admin** | `admin` | `admin123` |
+| **Konselor** | `konselor1` | `konselor123` |
+| **Siswa** | `siswa1` | `siswa123` |
+
+### 📁 **7. Struktur Project**
+```
+counselor-hub/
+├── backend/                 # Flask API Server
+│   ├── app.py              # Main API application  
+│   ├── create_counselorhub_database.py  # Database setup
+│   ├── image_service.py    # Image upload service
+│   └── requirements.txt    # Python dependencies
+├── src/                    # React Frontend
+│   ├── components/         # React components
+│   ├── services/          # API services
+│   ├── contexts/          # React contexts
+│   └── types/             # TypeScript types
+├── counselorhub.sql       # Database schema
+└── package.json           # Node.js dependencies
+```
+
+### 🐛 **8. Troubleshooting**
+
+**Database Connection Error:**
+```bash
+# Pastikan MySQL service running
+# Windows:
+net start mysql80
+
+# Cek konfigurasi database di backend/app.py
+# Sesuaikan host, user, password sesuai setup MySQL Anda
+```
+
+**Port Already in Use:**
+```bash
+# Jika port 5000 atau 5173 sudah digunakan
+# Backend: Edit app.py, ubah port di app.run(port=5001)
+# Frontend: Edit vite.config.ts, tambahkan server.port: 3000
+```
+
+### 🎯 **9. Akses Aplikasi**
+1. **Buka browser** dan navigasi ke `http://localhost:5173`
+2. **Login** menggunakan kredensial default yang disediakan
+3. **Mulai explore** fitur-fitur Counselor Hub!
+
+### 🔧 **10. Production Deployment**
+```bash
+# Build frontend untuk production
+npm run build
+
+# File hasil build akan ada di folder 'dist/'
+# Deploy file tersebut ke web server (Apache, Nginx, dll)
+
+# Untuk backend, gunakan production WSGI server
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+### 📚 **11. API Documentation**
+Backend API tersedia di `http://localhost:5000` dengan endpoints:
+- `GET /api/students` - Daftar siswa
+- `POST /api/mental-health-assessments` - Simpan hasil assessment
+- `GET /api/counseling-sessions` - Daftar sesi konseling
+- Dan 50+ endpoints lainnya...
+
+### 🆘 **12. Bantuan & Support**
+Jika mengalami masalah:
+1. **Periksa log console** di browser (F12)
+2. **Cek terminal** untuk error message
+3. **Pastikan semua service running** (MySQL, Flask, Vite)
+4. **Restart services** jika diperlukan
+
+---
