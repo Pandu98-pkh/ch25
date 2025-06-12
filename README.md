@@ -13,7 +13,7 @@
 | Nama | NIM | Role |
 |------|-----|------|
 | **Pandu Kaya Hakiki** | 1103220016 | Full-Stack Developer |
-| **Adhiaris Muhammad Azka** | 1103220143 | Frontend & UI/UX Developer |
+| **Adhiaris Muhammad Azka** | 1103220143 | Backend Developer |
 
 </div>
 
@@ -408,8 +408,8 @@ graph TB
 
 | 👤 **Developer** | 🎯 **Role** | 🛠️ **Contributions** |
 |------------------|-------------|----------------------|
-| **Pandu Kaya Hakiki** | Full-Stack Developer | Backend API, Database Design, System Architecture |
-| **Adhiaris Muhammad Azka** | Frontend & UI/UX | React Components, User Interface, User Experience |
+| **Pandu Kaya Hakiki** | Full-Stack Developer | Frontend React Components, Backend API, Database Design, System Architecture |
+| **Adhiaris Muhammad Azka** | Backend Developer | Backend API Development, Database Integration, Server-side Logic |
 
 ### 🎓 **Academic Information**
 **Course**: Pemrograman Lanjut  
