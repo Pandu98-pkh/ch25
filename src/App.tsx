@@ -27,6 +27,8 @@ const DeletedClassesManagement = lazy(() => import('./components/DeletedClassesM
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const UserManualPage = lazy(() => import('./components/UserManualPage'));
 const FlowchartPage = lazy(() => import('./components/FlowchartPage'));
+const NetworkTest = lazy(() => import('./components/NetworkTest'));
+const TestLogin = lazy(() => import('./components/TestLogin'));
 
 // Component to require authentication
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -130,7 +132,13 @@ function App() {
                       <Route path="reports" element={<StudentReportsTemp />} />
                       <Route path="user-manual" element={<UserManualPage />} />
                       <Route path="flowchart" element={<FlowchartPage />} />
+                      <Route path="network-test" element={<NetworkTest />} />
+                      <Route path="test-login" element={<TestLogin />} />
                     </Route>
+                    {/* Public network test route */}
+                    <Route path="/network-test" element={<NetworkTest />} />
+                    {/* Public test login route */}
+                    <Route path="/test-login" element={<TestLogin />} />
                   </Routes>
                 </Suspense>
               </Router>

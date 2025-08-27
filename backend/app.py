@@ -4,7 +4,7 @@ CounselorHub Backend API Server
 Flask REST API server for the CounselorHub student counseling system
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
@@ -19,8 +19,16 @@ from flask import send_file, abort
 import os
 import time
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# Configure Flask to serve static files from dist folder
+app = Flask(__name__, static_folder='../dist', static_url_path='')
+
+# Configure CORS with more permissive settings for development
+CORS(app, 
+     origins=["*"],  # Allow all origins in development
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "X-User-Info"],
+     supports_credentials=True
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +57,17 @@ def dict_factory(cursor, row):
     columns = [col[0] for col in cursor.description]
     return dict(zip(columns, row))
 
+# Handle preflight OPTIONS requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-User-Info")
+        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+
 # Error handlers
 @app.errorhandler(400)
 def bad_request(error):
@@ -61,6 +80,26 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
+
+# Serve the React app
+@app.route('/')
+def serve_index():
+    """Serve the main React application"""
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static_files(path):
+    """Serve static files and handle React Router routes"""
+    # If it's an API route, let it pass through to API handlers
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # Try to serve the requested file
+    try:
+        return send_from_directory(app.static_folder, path)
+    except FileNotFoundError:
+        # If file not found, serve index.html (for React Router)
+        return send_from_directory(app.static_folder, 'index.html')
 
 # Health check endpoint
 @app.route('/health', methods=['GET'])
@@ -80,6 +119,77 @@ def health_check():
             'database': 'disconnected',
             'timestamp': datetime.now().isoformat()
         }), 500
+
+# API Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def api_health_check():
+    """API Health check endpoint"""
+    connection = get_db_connection()
+    if connection:
+        connection.close()
+        return jsonify({
+            'status': 'healthy',
+            'api': 'operational',
+            'database': 'connected',
+            'timestamp': datetime.now().isoformat()
+        })
+    else:
+        return jsonify({
+            'status': 'unhealthy',
+            'api': 'operational',
+            'database': 'disconnected',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+# API root endpoint
+@app.route('/api', methods=['GET'])
+def api_root():
+    """API root endpoint"""
+    return jsonify({
+        'name': 'CounselorHub API',
+        'version': '1.0.0',
+        'status': 'operational',
+        'endpoints': {
+            'health': '/api/health',
+            'login': '/api/users/auth/login',
+            'users': '/api/users',
+            'students': '/api/students',
+            'classes': '/api/classes',
+            'counselors': '/api/counselors'
+        },
+        'timestamp': datetime.now().isoformat()
+    })
+
+# Debug endpoint to check users
+@app.route('/api/debug/users', methods=['GET'])
+def debug_users():
+    """Debug endpoint to check users in database"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT user_id, username, email, name, role, is_active, created_at
+            FROM users 
+            ORDER BY created_at DESC
+            LIMIT 10
+        """)
+        
+        users = cursor.fetchall()
+        return jsonify({
+            'total_users': len(users),
+            'users': users
+        })
+        
+    except Error as e:
+        logger.error(f"Error fetching debug users: {e}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
 
 # User Management Endpoints
 @app.route('/api/users', methods=['GET'])
@@ -409,16 +519,28 @@ def delete_user(user_id):
             connection.close()
 
 # Authentication endpoint
-@app.route('/api/users/auth/login', methods=['POST'])
+@app.route('/api/users/auth/login', methods=['POST', 'OPTIONS'])
 def login():
     """Authenticate user login"""
+    # Handle preflight CORS requests
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        return response
+    
+    logger.info("Login endpoint accessed")
     data = request.get_json()
+    logger.info(f"Login attempt with data: {data}")
     
     if not data or not data.get('username') or not data.get('password'):
+        logger.warning("Missing username or password in login request")
         return jsonify({'error': 'Username and password required'}), 400
     
     connection = get_db_connection()
     if not connection:
+        logger.error("Database connection failed during login")
         return jsonify({'error': 'Database connection failed'}), 500
     
     try:
@@ -432,11 +554,15 @@ def login():
         """, (data['username'],))
         
         user = cursor.fetchone()
+        logger.info(f"User found: {user['username'] if user else 'None'}")
+        
         if not user:
+            logger.warning(f"Login failed: User '{data['username']}' not found")
             return jsonify({'error': 'Invalid username or password'}), 401
         
         # Verify password
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user['password_hash'].encode('utf-8')):
+            logger.warning(f"Login failed: Invalid password for user '{data['username']}'")
             return jsonify({'error': 'Invalid username or password'}), 401
         
         # Return user data (excluding password)
@@ -452,6 +578,7 @@ def login():
             }
         }
         
+        logger.info(f"Login successful for user: {user['username']}")
         return jsonify(result)
         
     except Error as e:
@@ -459,6 +586,8 @@ def login():
         return jsonify({'error': 'Authentication failed'}), 500
     finally:
         if connection.is_connected():
+            cursor.close()
+            connection.close()
             cursor.close()
             connection.close()
 
@@ -4579,7 +4708,10 @@ if __name__ == '__main__':
     if connection:
         connection.close()
         print("✅ Database connection successful!")
-        print("🚀 Starting CounselorHub API server...")
+        print("🌐 Starting CounselorHub Web Application...")
+        print("📱 Frontend: http://localhost:5000")
+        print("🔗 API Base: http://localhost:5000/api")
+        print("🏥 Health Check: http://localhost:5000/health")
         app.run(debug=True, host='0.0.0.0', port=5000)
     else:
         print("❌ Database connection failed! Please check your database configuration.")

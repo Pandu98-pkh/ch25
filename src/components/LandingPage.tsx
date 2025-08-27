@@ -186,6 +186,34 @@ export default function LandingPage() {
                 </button>
               </div>
 
+              {/* Debug Tools untuk Mobile Testing */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button
+                  onClick={() => navigate('/test-login')}
+                  className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
+                >
+                  🔧 Test Login API
+                </button>
+                <button
+                  onClick={() => navigate('/network-test')}
+                  className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+                >
+                  🌐 Network Test
+                </button>
+                <button
+                  onClick={() => window.open('/api/debug/users', '_blank')}
+                  className="px-3 py-1 text-xs bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition-colors"
+                >
+                  📊 Debug Users
+                </button>
+                <button
+                  onClick={() => window.open('/health', '_blank')}
+                  className="px-3 py-1 text-xs bg-yellow-100 text-yellow-600 rounded-full hover:bg-yellow-200 transition-colors"
+                >
+                  💚 Health Check
+                </button>
+              </div>
+
               {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
                 {stats.map((stat, index) => (
@@ -482,6 +510,8 @@ export default function LandingPage() {
                 <li>Training</li>
                 <li>Customer Support</li>
                 <li>Community</li>
+                <li><button onClick={() => navigate('/test-login')} className="hover:text-white transition-colors">🔧 Test Login</button></li>
+                <li><button onClick={() => navigate('/network-test')} className="hover:text-white transition-colors">🌐 Network Test</button></li>
               </ul>
             </div>
 
